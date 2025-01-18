@@ -1,0 +1,30 @@
+syntax = "proto3";
+package com.refoler;
+
+enum DeviceType {
+  DEVICE_TYPE_ANDROID = 0;
+  DEVICE_TYPE_DESKTOP = 1;
+  DEVICE_TYPE_WEB = 2;
+  DEVICE_TYPE_IOS = 3;
+  DEVICE_TYPE_CLI = 4;
+}
+
+message Device {
+  string device_name = 1;
+  string device_id = 2;
+  optional DeviceType device_type = 3;
+  optional sint64 last_queried_time = 4;
+}
+
+message ResponsePacket {
+  string status = 1;
+  string error_cause = 2;
+  repeated string extra_data = 3;
+}
+
+message RequestPacket {
+  string uid = 1;
+  string action_name = 2;
+  repeated Device device = 3;
+  optional string extra_data = 4;
+}
