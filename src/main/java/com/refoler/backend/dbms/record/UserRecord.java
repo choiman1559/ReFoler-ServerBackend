@@ -49,11 +49,12 @@ public class UserRecord {
 
         try {
             boolean isFailed = false;
-            String[] deviceListArray = new String[requestPacket.getDeviceCount()];
-            for (int i = 0; i < requestPacket.getDeviceCount(); i += 1) {
-                DeviceRecord deviceRecord = getDeviceRecordById(requestPacket.getDevice(i).getDeviceId());
-                deviceListArray[i] = deviceRecord == null ? "" : deviceRecord.getFileList();
-                if(deviceListArray[i] == null) isFailed = true;
+            String[] deviceListArray = getDeviceList(requestPacket);
+            for(String deviceListObject : deviceListArray) {
+                if(deviceListObject == null || deviceListObject.isEmpty()) {
+                    isFailed = true;
+                    break;
+                }
             }
 
             if(isFailed) {
@@ -64,6 +65,15 @@ public class UserRecord {
         } catch (IOException e) {
             Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(RecordConst.ERROR_DATA_DB_IO_FAILED_READ));
         }
+    }
+
+    public String[] getDeviceList(Refoler.RequestPacket requestPacket) throws IOException {
+        String[] deviceListArray = new String[requestPacket.getDeviceCount()];
+        for (int i = 0; i < requestPacket.getDeviceCount(); i += 1) {
+            DeviceRecord deviceRecord = getDeviceRecordById(requestPacket.getDevice(i).getDeviceId());
+            deviceListArray[i] = deviceRecord == null ? "" : deviceRecord.getFileList();
+        }
+        return deviceListArray;
     }
 
     public void uploadDeviceList(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) throws IOException {

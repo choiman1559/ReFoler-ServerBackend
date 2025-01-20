@@ -1,6 +1,5 @@
 package com.refoler.backend.dbms;
 
-import com.google.protobuf.util.JsonFormat;
 import com.refoler.Refoler;
 import com.refoler.backend.commons.packet.PacketProcessModel;
 import com.refoler.backend.dbms.record.UserRecord;
@@ -8,6 +7,7 @@ import com.refoler.backend.commons.utils.Log;
 import com.refoler.backend.commons.packet.PacketConst;
 import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.service.Service;
+import com.refoler.backend.dbms.search.SearchProcess;
 import io.ktor.server.application.ApplicationCall;
 
 import java.io.IOException;
@@ -53,6 +53,7 @@ public class DbPacketProcess implements PacketProcessModel {
                 }
             }
 
+            case RecordConst.SERVICE_TYPE_FILE_SEARCH -> SearchProcess.handleSearchRequest(applicationCall, requestPacket, userRecord);
             case RecordConst.SERVICE_TYPE_TRANSFER_FILE -> // Stub, For further development (About WebSocket?)
                     Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(PacketConst.ERROR_SERVICE_NOT_IMPLEMENTED));
             default -> Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(PacketConst.ERROR_SERVICE_NOT_FOUND));

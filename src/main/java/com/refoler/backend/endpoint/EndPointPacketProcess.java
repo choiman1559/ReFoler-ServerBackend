@@ -10,7 +10,6 @@ import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.commons.utils.JsonRequest;
 import com.refoler.backend.commons.utils.Log;
 import com.refoler.backend.endpoint.provider.FirebaseHelper;
-import com.refoler.backend.endpoint.search.SearchProcess;
 import io.ktor.http.HttpStatusCode;
 import io.ktor.server.application.ApplicationCall;
 import java.io.IOException;
@@ -53,7 +52,6 @@ public class EndPointPacketProcess implements PacketProcessModel {
             case EndPointConst.SERVICE_TYPE_LLM -> {
                 //TODO: Have To Connect with 192.168.50.194:18035 -> (LM-Studio) 192.168.50.13:18037
             }
-            case EndPointConst.SERVICE_TYPE_FILE_SEARCH -> SearchProcess.handleSearchRequest(applicationCall, requestPacket);
             case EndPointConst.SERVICE_TYPE_CHECK_ALIVE -> Service.replyPacket(applicationCall, PacketWrapper.makePacket(Service.getInstance().getArgument().version));
             case EndPointConst.SERVICE_TYPE_FCM_POST -> handleFcmPostRequest(applicationCall, requestPacket);
             default -> handleDefaultRoute(applicationCall, serviceType, requestPacket);

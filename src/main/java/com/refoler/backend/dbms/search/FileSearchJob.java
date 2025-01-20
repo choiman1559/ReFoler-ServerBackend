@@ -1,4 +1,4 @@
-package com.refoler.backend.endpoint.search;
+package com.refoler.backend.dbms.search;
 
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -29,17 +29,12 @@ public class FileSearchJob {
     public boolean searchFor() {
         try {
             ArrayList<FileElement> searchResult = new ArrayList<>();
-            FileElement fileElement = new FileElement();
-            fileElement.path = "/storage";
-
             for (Iterator<String> it = jsonObject.keys(); it.hasNext(); ) {
                 String key = it.next();
                 Object obj = jsonObject.get(key);
                 ArrayList<FileElement> foundElements = switch (key) {
-                    case ReFileConst.DATA_TYPE_LAST_MODIFIED -> null;
-                    case ReFileConst.DATA_TYPE_INTERNAL_STORAGE ->
-                            searchForSubElement((JSONObject) obj, "%s/emulated/0".formatted(fileElement.path));
-                    default -> searchForSubElement((JSONObject) obj, "%s/%s".formatted(fileElement.path, key));
+                    case ReFileConst.DATA_TYPE_LAST_MODIFIED, ReFileConst.DATA_TYPE_IS_FILE -> null;
+                    default -> searchForSubElement((JSONObject) obj, key);
                 };
 
                 if(foundElements != null && !foundElements.isEmpty()) {

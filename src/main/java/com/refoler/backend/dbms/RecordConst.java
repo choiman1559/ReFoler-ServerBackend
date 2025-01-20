@@ -8,6 +8,7 @@ public class RecordConst {
 
     public final static String SERVICE_TYPE_DEVICE_REGISTRATION = "type_device_registration";
     public final static String SERVICE_TYPE_DEVICE_FILE_LIST = "type_device_file_list";
+    public final static String SERVICE_TYPE_FILE_SEARCH = "type_file_search";
     public final static String SERVICE_TYPE_TRANSFER_FILE = ""; //UNUSED, FOR STUB
 
     public final static String SERVICE_ACTION_TYPE_GET = "action_get_data";

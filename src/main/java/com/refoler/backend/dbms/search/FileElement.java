@@ -1,4 +1,4 @@
-package com.refoler.backend.endpoint.search;
+package com.refoler.backend.dbms.search;
 
 import org.json.JSONObject;
 

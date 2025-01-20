@@ -27,4 +27,5 @@ message RequestPacket {
   string action_name = 2;
   repeated Device device = 3;
   optional string extra_data = 4;
+  optional string data_decrypt_key = 5;
 }

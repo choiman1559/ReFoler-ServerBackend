@@ -23,24 +23,27 @@ public class Argument {
     public static final int OPERATION_MODE_LLM = 2;
     public int operationMode;
 
-    // For Endpoint Operation Mode
+    // For DBMS Node access for Endpoint & LLM Node
     public int recordNodePort;
     public String recordNodeHost;
+
+    // For Endpoint Operation Mode
     public int llmNodePort;
     public String llmNodeHost;
     public boolean useAuthentication;
     public String authCredentialPath;
-
-    // For DBMS Operation Mode
-    public String recordDirectoryPath;
-    public long recordHotRecordLifetime;
-    public long recordGcInterval;
 
     // For LLM Operation Mode
     public String llmServerEndpoint;
     public String bigModelName;
     public String littleModelName;
     public String openAiTokenKey;
+    public String webSocketPort;
+
+    // For DBMS Operation Mode
+    public String recordDirectoryPath;
+    public long recordHotRecordLifetime;
+    public long recordGcInterval;
 
     public static Argument buildFrom(List<String> argument) throws IOException, IllegalArgumentException {
         if(argument.isEmpty()) {
