@@ -1,6 +1,7 @@
 package com.refoler.backend.llm;
 
 import com.refoler.Refoler;
+import com.refoler.backend.commons.consts.LlmConst;
 import com.refoler.backend.commons.consts.PacketConst;
 import com.refoler.backend.commons.packet.PacketProcessModel;
 import com.refoler.backend.commons.packet.PacketWrapper;
@@ -13,10 +14,10 @@ import com.refoler.backend.commons.utils.WebSocketUtil;
 import com.refoler.backend.llm.role.UserSession;
 
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
-import dev.langchain4j.model.localai.LocalAiStreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import io.ktor.server.application.ApplicationCall;
 import io.ktor.server.websocket.DefaultWebSocketServerSession;
+import io.ktor.websocket.CloseReason;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -28,8 +29,8 @@ public class LlmPacketProcess implements PacketProcessModel {
     private static final String LogTAG = "LlmPacketProcess";
     private final HashMap<String, MapObjLocker<UserSession>> userSessionHashMap;
 
-    public final StreamingChatLanguageModel bigModel;
-    public final StreamingChatLanguageModel littleModel;
+    public static StreamingChatLanguageModel bigModel;
+    public static StreamingChatLanguageModel littleModel;
 
     public LlmPacketProcess() throws IOException {
         userSessionHashMap = new HashMap<>();
@@ -40,21 +41,27 @@ public class LlmPacketProcess implements PacketProcessModel {
             bigModel = OpenAiStreamingChatModel.builder()
                     .apiKey(openAiKey)
                     .modelName(argument.bigModelName)
+                    .strictTools(true)
                     .build();
 
             littleModel = OpenAiStreamingChatModel.builder()
                     .apiKey(openAiKey)
                     .modelName(argument.littleModelName)
+                    .strictTools(true)
                     .build();
         } else {
-            bigModel = LocalAiStreamingChatModel.builder()
+            bigModel = OpenAiStreamingChatModel.builder()
+                    .apiKey("Stub!")
                     .baseUrl(argument.llmServerEndpoint)
                     .modelName(argument.bigModelName)
+                    .strictTools(false)
                     .build();
 
-            littleModel = LocalAiStreamingChatModel.builder()
+            littleModel = OpenAiStreamingChatModel.builder()
+                    .apiKey("Stub!")
                     .baseUrl(argument.llmServerEndpoint)
                     .modelName(argument.littleModelName)
+                    .strictTools(false)
                     .build();
         }
     }
@@ -86,11 +93,19 @@ public class LlmPacketProcess implements PacketProcessModel {
     }
 
     @Override
-    public void onWebSocketSessionConnected(ApplicationCall applicationCall, String serviceType, DefaultWebSocketServerSession socketServerSession) throws Exception {
+    public void onWebSocketSessionConnected(ApplicationCall applicationCall, String serviceType, DefaultWebSocketServerSession socketServerSession) {
         WebSocketUtil.registerOnDataIncomeSocket(socketServerSession, data -> {
-            String message = new String(data);
-            Log.printDebug(LogTAG,  message);
-            WebSocketUtil.replyWebSocket(socketServerSession, "You said: %s".formatted(message));
+            try {
+                Refoler.RequestPacket requestPacket = PacketWrapper.parseRequestPacket(new String(data));
+                UserSession userSession = getUserRecordMap(requestPacket.getUid());
+                if (userSession != null) {
+                    userSession.transferConversation(requestPacket, socketServerSession);
+                } else {
+                    WebSocketUtil.closeWebSocket(socketServerSession, CloseReason.Codes.CANNOT_ACCEPT, LlmConst.ERROR_CONVERSATION_SESSION_NOT_INITIALIZED);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 }

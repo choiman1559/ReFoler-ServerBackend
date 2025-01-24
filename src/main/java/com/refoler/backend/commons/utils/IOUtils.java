@@ -6,6 +6,7 @@ import kotlinx.io.BuffersJvmKt;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
+@SuppressWarnings({"UnusedReturnValue", "unused"})
 public class IOUtils {
     public static boolean createNewFile(File destFile) throws IOException {
         return (destFile.exists() & destFile.delete()) & destFile.createNewFile();

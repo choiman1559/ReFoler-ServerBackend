@@ -4,6 +4,7 @@ import com.refoler.Refoler;
 import com.refoler.backend.commons.packet.PacketProcessModel;
 import com.refoler.backend.commons.utils.MapObjLocker;
 import com.refoler.backend.commons.consts.RecordConst;
+import com.refoler.backend.commons.utils.WebSocketUtil;
 import com.refoler.backend.dbms.record.UserRecord;
 import com.refoler.backend.commons.utils.Log;
 import com.refoler.backend.commons.consts.PacketConst;
@@ -48,7 +49,12 @@ public class DbPacketProcess implements PacketProcessModel {
 
     @Override
     public void onWebSocketSessionConnected(ApplicationCall applicationCall, String serviceType, DefaultWebSocketServerSession socketServerSession) throws Exception {
-
+        WebSocketUtil.registerOnDataIncomeSocket(socketServerSession, data -> {
+            //TODO: Implement Blob transmitting
+            String message = new String(data);
+            Log.printDebug(LogTAG,  message);
+            WebSocketUtil.replyWebSocket(socketServerSession, "You said: %s".formatted(message));
+        });
     }
 
     public static void processUserAction(ApplicationCall applicationCall, String serviceType, Refoler.RequestPacket requestPacket, UserRecord userRecord) throws IOException {

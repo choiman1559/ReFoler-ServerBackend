@@ -3,7 +3,8 @@ package com.refoler.backend.commons.utils
 import io.ktor.server.websocket.*
 import io.ktor.util.collections.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import org.jetbrains.annotations.Nullable
 
 class WebSocketUtil {
 
@@ -12,14 +13,18 @@ class WebSocketUtil {
     }
 
     companion object {
-        private var onSocketFrameIncomeListener : ConcurrentMap<DefaultWebSocketServerSession, OnSocketFrameIncomeListener> = ConcurrentMap()
+        private var onSocketFrameIncomeListener: ConcurrentMap<DefaultWebSocketServerSession, OnSocketFrameIncomeListener> =
+            ConcurrentMap()
 
-        fun getSocketFrameIncomeListener(webSocketServerSession: DefaultWebSocketServerSession) : OnSocketFrameIncomeListener? {
+        fun getSocketFrameIncomeListener(webSocketServerSession: DefaultWebSocketServerSession): OnSocketFrameIncomeListener? {
             return this.onSocketFrameIncomeListener[webSocketServerSession]
         }
 
         @JvmStatic
-        fun registerOnDataIncomeSocket(webSocketServerSession: DefaultWebSocketServerSession, listener: OnSocketFrameIncomeListener) {
+        fun registerOnDataIncomeSocket(
+            webSocketServerSession: DefaultWebSocketServerSession,
+            listener: OnSocketFrameIncomeListener
+        ) {
             this.onSocketFrameIncomeListener[webSocketServerSession] = listener
         }
 
@@ -45,6 +50,11 @@ class WebSocketUtil {
                 socketServerSession.close(CloseReason(closeReason, message))
             }
             this.onSocketFrameIncomeListener.remove(socketServerSession)
+        }
+
+        @JvmStatic
+        fun isSocketActive(@Nullable socketServerSession: DefaultWebSocketServerSession): Boolean {
+            return socketServerSession.isActive
         }
     }
 }
