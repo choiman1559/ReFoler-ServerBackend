@@ -5,7 +5,7 @@ import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.dbms.DbPacketProcess;
 import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.utils.Log;
-import com.refoler.backend.dbms.RecordConst;
+import com.refoler.backend.commons.consts.RecordConst;
 import io.ktor.server.application.ApplicationCall;
 
 import java.io.File;
@@ -49,7 +49,7 @@ public class UserRecord {
 
         try {
             boolean isFailed = false;
-            String[] deviceListArray = getDeviceList(requestPacket);
+            String[] deviceListArray = fetchDeviceFileListFromDb(requestPacket);
             for(String deviceListObject : deviceListArray) {
                 if(deviceListObject == null || deviceListObject.isEmpty()) {
                     isFailed = true;
@@ -67,7 +67,7 @@ public class UserRecord {
         }
     }
 
-    public String[] getDeviceList(Refoler.RequestPacket requestPacket) throws IOException {
+    public String[] fetchDeviceFileListFromDb(Refoler.RequestPacket requestPacket) throws IOException {
         String[] deviceListArray = new String[requestPacket.getDeviceCount()];
         for (int i = 0; i < requestPacket.getDeviceCount(); i += 1) {
             DeviceRecord deviceRecord = getDeviceRecordById(requestPacket.getDevice(i).getDeviceId());
@@ -89,12 +89,12 @@ public class UserRecord {
         }
     }
 
-    public void getDeviceList(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) throws IOException {
+    public void getDeviceRegistrationList(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) throws IOException {
         try {
             String[] deviceMetadataArray;
             boolean isFailed = false;
 
-            if (requestPacket.getDeviceCount() > 0) {
+            if (!requestPacket.getDeviceList().isEmpty()) {
                 deviceMetadataArray = new String[requestPacket.getDeviceCount()];
                 for (int i = 0; i < requestPacket.getDeviceCount(); i += 1) {
                     DeviceRecord deviceRecord = getDeviceRecordById(requestPacket.getDevice(i).getDeviceId());
@@ -103,11 +103,12 @@ public class UserRecord {
                 }
             } else {
                 deviceMetadataArray = new String[deviceMap.size()];
-                int i = 0;
+                int deviceListIndex = 0;
                 for (String deviceIdKey : deviceMap.keySet()) {
                     DeviceRecord deviceRecord = getDeviceRecordById(deviceIdKey);
-                    deviceMetadataArray[i += 1] = deviceRecord == null ? "" : deviceRecord.getDeviceMetadata();
-                    if(deviceMetadataArray[i] == null) isFailed = true;
+                    deviceMetadataArray[deviceListIndex] = deviceRecord == null ? "" : deviceRecord.getDeviceMetadata();
+                    if(deviceMetadataArray[deviceListIndex] == null) isFailed = true;
+                    deviceListIndex += 1;
                 }
             }
 
@@ -145,13 +146,11 @@ public class UserRecord {
 
     private void igniteIntervalGcThread() {
         final long gcInterval = Service.getInstance().getArgument().recordGcInterval;
-        try (ScheduledExecutorService executor = Executors.newScheduledThreadPool(1)){
-            executor.scheduleAtFixedRate(this::performIntervalGc, gcInterval, gcInterval, TimeUnit.MILLISECONDS);
-        }
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(this::performIntervalGc, gcInterval, gcInterval, TimeUnit.MILLISECONDS);
     }
 
     private void performIntervalGc() {
-        Log.printDebug(LogTAG, "GC_Tick");
         int cleanedCacheCount = 0;
         for (String deviceRecordKey : deviceMap.keySet()) {
              DeviceRecord deviceRecord = getDeviceRecordById(deviceRecordKey);

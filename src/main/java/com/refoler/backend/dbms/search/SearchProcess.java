@@ -13,7 +13,7 @@ import java.io.IOException;
 public class SearchProcess {
     public static void handleSearchRequest(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket, UserRecord userRecord) throws IOException {
         String searchKeyword = requestPacket.getExtraData();
-        String[] deviceFileList = userRecord.getDeviceList(requestPacket);
+        String[] deviceFileList = userRecord.fetchDeviceFileListFromDb(requestPacket);
         JSONObject resultObject = new JSONObject();
 
         for (int i = 0; i < requestPacket.getDeviceCount(); i++) {

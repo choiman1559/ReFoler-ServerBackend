@@ -1,4 +1,4 @@
-package com.refoler.backend.commons.packet;
+package com.refoler.backend.commons.consts;
 
 @SuppressWarnings("unused")
 public class PacketConst {

@@ -1,4 +1,4 @@
-package com.refoler.backend.endpoint;
+package com.refoler.backend.commons.consts;
 
 public class EndPointConst {
     public final static String SERVICE_TYPE_LLM = "type_llm_conversation";
@@ -7,4 +7,5 @@ public class EndPointConst {
 
     public final static String ERROR_ILLEGAL_AUTHENTICATION = "server_illegal_authentication";
     public final static String KEY_AUTHENTICATION = "Authorization";
+    public final static String KET_UID = "Authorization-Uid";
 }

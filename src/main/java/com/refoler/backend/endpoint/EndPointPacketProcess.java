@@ -2,17 +2,25 @@ package com.refoler.backend.endpoint;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.refoler.Refoler;
-import com.refoler.backend.commons.packet.PacketConst;
+import com.refoler.backend.commons.utils.WebSocketRequest;
+import com.refoler.backend.commons.utils.WebSocketUtil;
+import com.refoler.backend.commons.consts.PacketConst;
 import com.refoler.backend.commons.packet.PacketProcessModel;
 import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.service.Argument;
 import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.commons.utils.JsonRequest;
 import com.refoler.backend.commons.utils.Log;
+import com.refoler.backend.commons.consts.EndPointConst;
+import com.refoler.backend.commons.consts.RecordConst;
 import com.refoler.backend.endpoint.provider.FirebaseHelper;
 import io.ktor.http.HttpStatusCode;
 import io.ktor.server.application.ApplicationCall;
+import io.ktor.server.websocket.DefaultWebSocketServerSession;
+import io.ktor.websocket.CloseReason;
+
 import java.io.IOException;
+import java.util.Objects;
 
 @SuppressWarnings("HttpUrlsUsage")
 public class EndPointPacketProcess implements PacketProcessModel {
@@ -31,30 +39,63 @@ public class EndPointPacketProcess implements PacketProcessModel {
     public void onPacketReceived(ApplicationCall applicationCall, String serviceType, String rawData) throws Exception {
         Refoler.RequestPacket requestPacket = PacketWrapper.parseRequestPacket(rawData);
 
-        if(Service.getInstance().getArgument().useAuthentication) {
+        if (Service.getInstance().getArgument().useAuthentication) {
             String uid = requestPacket.getUid();
             final String bearerPrefix = "Bearer ";
             final String idToken = applicationCall.getRequest().getHeaders().get(EndPointConst.KEY_AUTHENTICATION);
 
-            if(idToken == null || uid.isEmpty()) {
+            if (idToken == null || uid.isEmpty()) {
                 Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(PacketConst.ERROR_ILLEGAL_ARGUMENT, HttpStatusCode.Companion.getUnauthorized()));
                 return;
-            } else if(!idToken.startsWith(bearerPrefix)) {
+            } else if (!idToken.startsWith(bearerPrefix)) {
                 Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(PacketConst.ERROR_ILLEGAL_ARGUMENT, HttpStatusCode.Companion.getUnauthorized()));
                 return;
-            } else if(!FirebaseHelper.verifyToken(idToken.replace(bearerPrefix, "").trim(), uid)) {
+            } else if (!FirebaseHelper.verifyToken(idToken.replace(bearerPrefix, "").trim(), uid)) {
                 Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(EndPointConst.ERROR_ILLEGAL_AUTHENTICATION, HttpStatusCode.Companion.getUnauthorized()));
                 return;
             }
         }
 
         switch (serviceType) {
-            case EndPointConst.SERVICE_TYPE_LLM -> {
-                //TODO: Have To Connect with 192.168.50.194:18035 -> (LM-Studio) 192.168.50.13:18037
-            }
-            case EndPointConst.SERVICE_TYPE_CHECK_ALIVE -> Service.replyPacket(applicationCall, PacketWrapper.makePacket(Service.getInstance().getArgument().version));
+            case EndPointConst.SERVICE_TYPE_LLM -> handleLLmRoute(applicationCall, requestPacket);
+            case EndPointConst.SERVICE_TYPE_CHECK_ALIVE ->
+                    Service.replyPacket(applicationCall, PacketWrapper.makePacket(Service.getInstance().getArgument().version));
             case EndPointConst.SERVICE_TYPE_FCM_POST -> handleFcmPostRequest(applicationCall, requestPacket);
             default -> handleDefaultRoute(applicationCall, serviceType, requestPacket);
+        }
+    }
+
+    @Override
+    public void onWebSocketSessionConnected(ApplicationCall applicationCall, String serviceType, DefaultWebSocketServerSession socketServerSession) {
+        if (Service.getInstance().getArgument().useAuthentication) {
+            String uid = applicationCall.getRequest().getHeaders().get(EndPointConst.KET_UID);
+            final String bearerPrefix = "Bearer ";
+            final String idToken = applicationCall.getRequest().getHeaders().get(EndPointConst.KEY_AUTHENTICATION);
+
+            if (idToken == null || Objects.requireNonNullElse(uid, "").isEmpty()) {
+                WebSocketUtil.closeWebSocket(socketServerSession, CloseReason.Codes.CANNOT_ACCEPT, PacketConst.ERROR_ILLEGAL_ARGUMENT);
+                return;
+            } else if (!idToken.startsWith(bearerPrefix)) {
+                WebSocketUtil.closeWebSocket(socketServerSession, CloseReason.Codes.PROTOCOL_ERROR, PacketConst.ERROR_ILLEGAL_ARGUMENT);
+                return;
+            } else if (!FirebaseHelper.verifyToken(idToken.replace(bearerPrefix, "").trim(), uid)) {
+                WebSocketUtil.closeWebSocket(socketServerSession, CloseReason.Codes.CANNOT_ACCEPT, EndPointConst.ERROR_ILLEGAL_AUTHENTICATION);
+                return;
+            }
+        }
+
+        Argument argument = Service.getInstance().getArgument();
+        switch (serviceType) {
+            case EndPointConst.SERVICE_TYPE_LLM -> WebSocketRequest.handleWebSocketProxy(socketServerSession,
+                    argument.llmNodeHost, argument.llmNodePort,
+                    PacketConst.API_ROUTE_SCHEMA.replace("{version}", "v1").replace("{service_type}", serviceType));
+
+            case RecordConst.SERVICE_TYPE_TRANSFER_FILE -> WebSocketRequest.handleWebSocketProxy(socketServerSession,
+                    argument.recordNodeHost, argument.recordNodePort,
+                    PacketConst.API_ROUTE_SCHEMA.replace("{version}", "v1").replace("{service_type}", serviceType));
+
+            default ->
+                    WebSocketUtil.closeWebSocket(socketServerSession, CloseReason.Codes.VIOLATED_POLICY, PacketConst.ERROR_SERVICE_NOT_FOUND);
         }
     }
 
@@ -68,6 +109,19 @@ public class EndPointPacketProcess implements PacketProcessModel {
         }
 
         Service.replyPacket(applicationCall, packetWrapper);
+    }
+
+    private void handleLLmRoute(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) {
+        Argument argument = Service.getInstance().getArgument();
+        String url = "http://%s:%s%s".formatted(argument.llmNodeHost, argument.llmNodePort,
+                PacketConst.API_ROUTE_SCHEMA.replace("{version}", "v1").replace("{service_type}", EndPointConst.SERVICE_TYPE_LLM));
+        JsonRequest.postRequestPacket(url, requestPacket, receivedPacket -> {
+            try {
+                Service.replyPacket(applicationCall, receivedPacket);
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void handleDefaultRoute(ApplicationCall applicationCall, String serviceType, Refoler.RequestPacket requestPacket) {

@@ -3,6 +3,7 @@ package com.refoler.backend.commons.packet;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.refoler.Refoler;
+import com.refoler.backend.commons.consts.PacketConst;
 import io.ktor.http.HttpStatusCode;
 
 import java.io.IOException;

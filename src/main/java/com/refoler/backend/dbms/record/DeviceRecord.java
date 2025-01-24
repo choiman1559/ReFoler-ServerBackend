@@ -4,7 +4,7 @@ import com.google.protobuf.util.JsonFormat;
 import com.refoler.Refoler;
 import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.commons.utils.IOUtils;
-import com.refoler.backend.dbms.RecordConst;
+import com.refoler.backend.commons.consts.RecordConst;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -50,7 +50,10 @@ public class DeviceRecord {
         File deviceListFile = new File(deviceRecordDirectory, RecordConst.FILE_PREFIX_DEVICE_FILE_LIST);
 
         if (deviceListFile.exists()) {
-            return deviceRecordFileListCache == null ? IOUtils.readFrom(deviceListFile) : deviceRecordFileListCache;
+            if(deviceRecordFileListCache == null) {
+                deviceRecordFileListCache = IOUtils.readFrom(deviceListFile);
+            }
+            return deviceRecordFileListCache;
         } else return null;
     }
 
@@ -98,7 +101,7 @@ public class DeviceRecord {
 
     public boolean cleanUpCache() {
         if (deviceRecordFileListCache != null &&
-                (Service.getInstance().getArgument().recordHotRecordLifetime + deviceRecordFileListCacheTimeInMillis) > System.currentTimeMillis()) {
+                (Service.getInstance().getArgument().recordHotRecordLifetime + deviceRecordFileListCacheTimeInMillis) < System.currentTimeMillis()) {
             deviceRecordFileListCache = null;
             return true;
         }

@@ -22,6 +22,7 @@ public class Argument {
     public static final int OPERATION_MODE_DBMS = 1;
     public static final int OPERATION_MODE_LLM = 2;
     public int operationMode;
+    public boolean webSocketEnabled;
 
     // For DBMS Node access for Endpoint & LLM Node
     public int recordNodePort;
@@ -38,7 +39,6 @@ public class Argument {
     public String bigModelName;
     public String littleModelName;
     public String openAiTokenKey;
-    public String webSocketPort;
 
     // For DBMS Operation Mode
     public String recordDirectoryPath;

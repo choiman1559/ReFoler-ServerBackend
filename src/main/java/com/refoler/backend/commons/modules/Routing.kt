@@ -1,7 +1,7 @@
 package com.refoler.backend.commons.modules
 
 import com.refoler.backend.commons.service.Service
-import com.refoler.backend.commons.packet.PacketConst
+import com.refoler.backend.commons.consts.PacketConst
 import com.refoler.backend.commons.packet.PacketWrapper
 import com.refoler.backend.commons.utils.Log
 import io.ktor.server.application.*

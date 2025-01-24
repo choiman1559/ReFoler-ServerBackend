@@ -8,6 +8,8 @@ import com.refoler.backend.endpoint.EndPointPacketProcess;
 import com.refoler.backend.llm.LlmPacketProcess;
 import io.ktor.http.HttpStatusCode;
 import io.ktor.server.application.ApplicationCall;
+import io.ktor.server.websocket.DefaultWebSocketServerSession;
+import io.ktor.websocket.Frame;
 
 public class Service {
     private static Service instance;
@@ -26,14 +28,15 @@ public class Service {
         this.serviceStatusHandler = new ServiceStatusHandler();
     }
 
-    public static void configureServiceInstance(Argument argument) {
+    public static void configureServiceInstance(Argument argument) throws ReflectiveOperationException {
         instance = new Service(argument);
-        instance.packetProcessModel = switch (argument.operationMode) {
-            case Argument.OPERATION_MODE_ENDPOINT -> new EndPointPacketProcess();
-            case Argument.OPERATION_MODE_DBMS -> new DbPacketProcess();
-            case Argument.OPERATION_MODE_LLM -> new LlmPacketProcess();
+        Class<?> packetProcessCls = switch (argument.operationMode) {
+            case Argument.OPERATION_MODE_ENDPOINT -> EndPointPacketProcess.class;
+            case Argument.OPERATION_MODE_DBMS -> DbPacketProcess.class;
+            case Argument.OPERATION_MODE_LLM -> LlmPacketProcess.class;
             default -> throw new IllegalArgumentException("Operation Mode %d is not valid value.".formatted(argument.operationMode));
         };
+        instance.packetProcessModel = (PacketProcessModel) packetProcessCls.getDeclaredConstructor().newInstance();
     }
 
     public static Service getInstance() {
@@ -59,6 +62,12 @@ public class Service {
         Service mInstance = Service.getInstance();
         if (mInstance != null && mInstance.mOnPacketProcessReplyReceiver != null) {
             mInstance.mOnPacketProcessReplyReceiver.onPacketReply(call, data.getStatusCode(), data.getSerializedData());
+        }
+    }
+
+    public static void invokeProcessWebSocketPacket(ApplicationCall applicationCall, String serviceType, DefaultWebSocketServerSession socketServerSession) throws Exception {
+        if(instance.packetProcessModel != null) {
+            instance.packetProcessModel.onWebSocketSessionConnected(applicationCall, serviceType, socketServerSession);
         }
     }
 }
