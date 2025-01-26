@@ -6,6 +6,10 @@ public class FileElement {
     public String path;
     public boolean isFile;
 
+    public long lastModified;
+    public long size;
+    public boolean isSkipped = false;
+
     public String getName() {
         String[] pathArrays = path.split("/");
         return pathArrays[pathArrays.length - 1];
@@ -19,6 +23,9 @@ public class FileElement {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put(ReFileConst.DATA_TYPE_PATH, this.path);
         jsonObject.put(ReFileConst.DATA_TYPE_IS_FILE, isFile);
+        jsonObject.put(ReFileConst.DATA_TYPE_LAST_MODIFIED, lastModified);
+        jsonObject.put(ReFileConst.DATA_TYPE_SIZE, size);
+        jsonObject.put(ReFileConst.DATA_TYPE_IS_SKIPPED, isSkipped);
         return jsonObject;
     }
 }

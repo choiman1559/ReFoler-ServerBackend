@@ -52,6 +52,7 @@ public class FileSearchJob {
         ArrayList<FileElement> searchResult = new ArrayList<>();
         FileElement fileElement = new FileElement();
         fileElement.path = basePath;
+        fileElement.lastModified = subJsonObject.getLong(ReFileConst.DATA_TYPE_LAST_MODIFIED);
 
         if(fileElement.includeName(keyword)) {
             searchResult.add(fileElement);
@@ -59,8 +60,10 @@ public class FileSearchJob {
 
         if (subJsonObject.getBoolean(ReFileConst.DATA_TYPE_IS_FILE)) {
             fileElement.isFile = true;
+            fileElement.size = subJsonObject.getLong(ReFileConst.DATA_TYPE_SIZE);
         } else {
             fileElement.isFile = false;
+            fileElement.isSkipped = subJsonObject.getBoolean(ReFileConst.DATA_TYPE_IS_SKIPPED);
 
             for (Iterator<String> it = subJsonObject.keys(); it.hasNext(); ) {
                 String key = it.next();

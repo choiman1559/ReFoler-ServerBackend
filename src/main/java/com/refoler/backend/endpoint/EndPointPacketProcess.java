@@ -22,7 +22,6 @@ import io.ktor.websocket.CloseReason;
 import java.io.IOException;
 import java.util.Objects;
 
-@SuppressWarnings("HttpUrlsUsage")
 public class EndPointPacketProcess implements PacketProcessModel {
 
     private static final String LogTAG = "EndPointPacketProcess";
@@ -113,27 +112,25 @@ public class EndPointPacketProcess implements PacketProcessModel {
 
     private void handleLLmRoute(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) {
         Argument argument = Service.getInstance().getArgument();
-        String url = "http://%s:%s%s".formatted(argument.llmNodeHost, argument.llmNodePort,
-                PacketConst.API_ROUTE_SCHEMA.replace("{version}", "v1").replace("{service_type}", EndPointConst.SERVICE_TYPE_LLM));
-        JsonRequest.postRequestPacket(url, requestPacket, receivedPacket -> {
-            try {
-                Service.replyPacket(applicationCall, receivedPacket);
-            } catch (InvalidProtocolBufferException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        JsonRequest.postRequestPacket(JsonRequest.buildIpcUrl(argument.llmNodeHost, argument.llmNodePort, EndPointConst.SERVICE_TYPE_LLM), requestPacket,
+                receivedPacket -> {
+                    try {
+                        Service.replyPacket(applicationCall, receivedPacket);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     private void handleDefaultRoute(ApplicationCall applicationCall, String serviceType, Refoler.RequestPacket requestPacket) {
         Argument argument = Service.getInstance().getArgument();
-        String url = "http://%s:%s%s".formatted(argument.recordNodeHost, argument.recordNodePort,
-                PacketConst.API_ROUTE_SCHEMA.replace("{version}", "v1").replace("{service_type}", serviceType));
-        JsonRequest.postRequestPacket(url, requestPacket, receivedPacket -> {
-            try {
-                Service.replyPacket(applicationCall, receivedPacket);
-            } catch (InvalidProtocolBufferException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        JsonRequest.postRequestPacket(JsonRequest.buildIpcUrl(argument.recordNodeHost, argument.recordNodePort, serviceType), requestPacket,
+                receivedPacket -> {
+                    try {
+                        Service.replyPacket(applicationCall, receivedPacket);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 }

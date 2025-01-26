@@ -2,6 +2,7 @@ package com.refoler.backend.dbms.search;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.refoler.Refoler;
+import com.refoler.backend.commons.consts.PacketConst;
 import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.dbms.record.UserRecord;
@@ -16,10 +17,19 @@ public class SearchProcess {
         String[] deviceFileList = userRecord.fetchDeviceFileListFromDb(requestPacket);
         JSONObject resultObject = new JSONObject();
 
-        for (int i = 0; i < requestPacket.getDeviceCount(); i++) {
-            FileSearchJob searchJob = new FileSearchJob(deviceFileList[i], searchKeyword);
-            String deviceId = requestPacket.getDevice(i).getDeviceId();
+        if(searchKeyword.isEmpty()) {
+            Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(PacketConst.ERROR_ILLEGAL_ARGUMENT));
+            return;
+        }
 
+        for (int i = 0; i < requestPacket.getDeviceCount(); i++) {
+            String deviceId = requestPacket.getDevice(i).getDeviceId();
+            if(deviceFileList[i].isEmpty()) {
+                resultObject.put(deviceId, "");
+                continue;
+            }
+
+            FileSearchJob searchJob = new FileSearchJob(deviceFileList[i], searchKeyword);
             if (searchJob.searchFor()) {
                 resultObject.put(deviceId, searchJob.printResult());
             } else {

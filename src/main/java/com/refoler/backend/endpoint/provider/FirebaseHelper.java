@@ -29,6 +29,7 @@ public class FirebaseHelper {
         FirebaseApp.initializeApp(options);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean verifyToken(String idToken, String uid) {
         try {
             if (cachedTokenHashmap.containsKey(uid)) {
