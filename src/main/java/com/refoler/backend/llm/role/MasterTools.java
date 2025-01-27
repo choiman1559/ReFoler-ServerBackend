@@ -1,6 +1,8 @@
 package com.refoler.backend.llm.role;
 
+import com.refoler.FileSearch;
 import com.refoler.Refoler;
+import com.refoler.backend.commons.consts.QueryConditions;
 import com.refoler.backend.commons.consts.RecordConst;
 import com.refoler.backend.llm.DeAsyncJob;
 import dev.langchain4j.agent.tool.P;
@@ -33,7 +35,6 @@ public record MasterTools(MasterAct masterAct) {
         Refoler.RequestPacket.Builder requestPacket = Refoler.RequestPacket.newBuilder();
         requestPacket.setUid(masterAct().getUid());
         requestPacket.setActionName(RecordConst.SERVICE_ACTION_TYPE_GET);
-        requestPacket.setExtraData(keyword);
 
         if (!deviceIdList.isEmpty()) {
             for (String deviceId : deviceIdList) {
@@ -41,9 +42,7 @@ public record MasterTools(MasterAct masterAct) {
             }
         }
 
-        DeAsyncJob<List<String>> getJob = FinderAct.requestRecordQuery(requestPacket.build(), RecordConst.SERVICE_TYPE_FILE_SEARCH);
-        List<String> result = getJob.runAndWait();
-        return result.isEmpty() ? "" : result.getFirst();
+        return requestQueryInternal(keyword, requestPacket);
     }
 
     @Tool("Get all metadata of single file, including size (in bytes), last modified date (in unix time). " +
@@ -53,12 +52,9 @@ public record MasterTools(MasterAct masterAct) {
         Refoler.RequestPacket.Builder requestPacket = Refoler.RequestPacket.newBuilder();
         requestPacket.setUid(masterAct.getUid());
         requestPacket.setActionName(RecordConst.SERVICE_ACTION_TYPE_GET);
-        requestPacket.setExtraData(filePath);
         requestPacket.addDevice(Refoler.Device.newBuilder().setDeviceId(deviceId).build());
 
-        DeAsyncJob<List<String>> getJob = FinderAct.requestRecordQuery(requestPacket.build(), RecordConst.SERVICE_TYPE_FILE_SEARCH);
-        List<String> result = getJob.runAndWait();
-        return result.isEmpty() ? "" : result.getFirst();
+        return requestQueryInternal(filePath, requestPacket);
     }
 
     @Tool("Performs analysis of a given command on the entire list of files on the device. " +
@@ -73,5 +69,21 @@ public record MasterTools(MasterAct masterAct) {
             resultMap.put(deviceId, masterAct.getFinderActById(deviceId).performAnalysisTask(deviceId, command).runAndWait());
         }
         return resultMap;
+    }
+
+    private String requestQueryInternal(String keyword, Refoler.RequestPacket.Builder requestPacket) {
+        FileSearch.Query.Builder queryBuilder = FileSearch.Query.newBuilder();
+        queryBuilder.setKeywordQuery(FileSearch.KeywordQuery.newBuilder()
+                .setKeyword(keyword)
+                .setIgnoreCase(true)
+                .setKeywordCondition(QueryConditions.CASE_KEYWORD_CONTAINS)
+                .build());
+        queryBuilder.setIndexQuery(FileSearch.IndexQuery
+                .newBuilder().setIsKeywordFullPath(true).build());
+        requestPacket.setFileQuery(queryBuilder.build());
+
+        DeAsyncJob<List<String>> getJob = FinderAct.requestRecordQuery(requestPacket.build(), RecordConst.SERVICE_TYPE_FILE_SEARCH);
+        List<String> result = getJob.runAndWait();
+        return result.isEmpty() ? "" : result.getFirst();
     }
 }

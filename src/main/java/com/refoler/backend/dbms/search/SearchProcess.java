@@ -13,11 +13,10 @@ import java.io.IOException;
 
 public class SearchProcess {
     public static void handleSearchRequest(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket, UserRecord userRecord) throws IOException {
-        String searchKeyword = requestPacket.getExtraData();
         String[] deviceFileList = userRecord.fetchDeviceFileListFromDb(requestPacket);
         JSONObject resultObject = new JSONObject();
 
-        if(searchKeyword.isEmpty()) {
+        if(!requestPacket.hasFileQuery()) {
             Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(PacketConst.ERROR_ILLEGAL_ARGUMENT));
             return;
         }
@@ -29,7 +28,7 @@ public class SearchProcess {
                 continue;
             }
 
-            FileSearchJob searchJob = new FileSearchJob(deviceFileList[i], searchKeyword);
+            FileSearchJob searchJob = new FileSearchJob(deviceFileList[i], requestPacket.getFileQuery());
             if (searchJob.searchFor()) {
                 resultObject.put(deviceId, searchJob.printResult());
             } else {

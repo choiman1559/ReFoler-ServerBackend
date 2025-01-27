@@ -1,0 +1,32 @@
+syntax = "proto3";
+package com.refoler;
+
+message Query {
+  optional KeywordQuery keyword_query = 1;
+  optional DateQuery date_query = 2;
+  optional SizeQuery size_query = 3;
+  optional IndexQuery index_query = 4;
+}
+
+message KeywordQuery {
+  string keyword_condition = 1;
+  string keyword = 2;
+  optional bool ignore_case = 3;
+}
+
+message DateQuery {
+  string date_condition = 1;
+  repeated sint64 date = 2;
+}
+
+message SizeQuery {
+  string size_condition = 1;
+  repeated sint64 size = 2;
+}
+
+message IndexQuery {
+  optional string search_scope = 1;
+  optional bool exclude_skipped_dir = 2;
+  optional bool is_keyword_full_path = 3;
+  optional KeywordQuery mime_query = 4;
+}

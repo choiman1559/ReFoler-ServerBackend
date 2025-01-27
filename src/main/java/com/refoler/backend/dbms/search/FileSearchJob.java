@@ -1,5 +1,6 @@
 package com.refoler.backend.dbms.search;
 
+import com.refoler.FileSearch;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -12,12 +13,12 @@ public class FileSearchJob {
 
     private final ArrayList<String> metadataKeyFilter;
     private final JSONObject jsonObject;
-    private final String keyword;
+    private final QueryProcess queryProcess;
     private ArrayList<FileElement> result;
 
-    public FileSearchJob(String rawData, String keyword) {
+    public FileSearchJob(String rawData, FileSearch.Query query) {
         this.jsonObject = new JSONObject(rawData);
-        this.keyword = keyword;
+        this.queryProcess = new QueryProcess(query);
 
         metadataKeyFilter = new ArrayList<>();
         metadataKeyFilter.add(ReFileConst.DATA_TYPE_IS_FILE);
@@ -54,10 +55,6 @@ public class FileSearchJob {
         fileElement.path = basePath;
         fileElement.lastModified = subJsonObject.getLong(ReFileConst.DATA_TYPE_LAST_MODIFIED);
 
-        if(fileElement.includeName(keyword)) {
-            searchResult.add(fileElement);
-        }
-
         if (subJsonObject.getBoolean(ReFileConst.DATA_TYPE_IS_FILE)) {
             fileElement.isFile = true;
             fileElement.size = subJsonObject.getLong(ReFileConst.DATA_TYPE_SIZE);
@@ -72,6 +69,10 @@ public class FileSearchJob {
                     searchResult.addAll(searchForSubElement((JSONObject) obj, "%s/%s".formatted(basePath, key)));
                 }
             }
+        }
+
+        if(queryProcess.matchCondition(fileElement)) {
+            searchResult.add(fileElement);
         }
         return searchResult;
     }

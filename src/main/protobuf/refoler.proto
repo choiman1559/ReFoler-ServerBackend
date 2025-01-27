@@ -1,5 +1,6 @@
 syntax = "proto3";
 package com.refoler;
+import "file_search.proto";
 
 enum DeviceType {
   DEVICE_TYPE_ANDROID = 0;
@@ -28,4 +29,5 @@ message RequestPacket {
   repeated Device device = 3;
   optional string extra_data = 4;
   optional string data_decrypt_key = 5;
+  optional Query file_query = 6;
 }
