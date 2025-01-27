@@ -1,10 +1,10 @@
-package com.refoler.backend.llm.role;
+package com.refoler.backend.llm.role.query;
 
 import com.refoler.FileSearch;
 import com.refoler.Refoler;
 import com.refoler.backend.commons.consts.RecordConst;
 import com.refoler.backend.llm.DeAsyncJob;
-import com.refoler.backend.llm.role.query.QueryWrapper;
+import com.refoler.backend.llm.role.FinderAct;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 

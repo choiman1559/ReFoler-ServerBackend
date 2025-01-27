@@ -7,6 +7,8 @@ import com.refoler.backend.commons.utils.Log;
 import com.refoler.backend.commons.utils.WebSocketUtil;
 import com.refoler.backend.llm.LlmPacketProcess;
 
+import com.refoler.backend.llm.role.query.CommonTools;
+import com.refoler.backend.llm.role.query.MasterTools;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.output.Response;

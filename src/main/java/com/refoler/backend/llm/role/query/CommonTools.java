@@ -1,4 +1,4 @@
-package com.refoler.backend.llm.role;
+package com.refoler.backend.llm.role.query;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
