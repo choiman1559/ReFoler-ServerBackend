@@ -5,6 +5,7 @@ import kotlinx.io.BuffersJvmKt;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
 public class IOUtils {
@@ -38,5 +39,14 @@ public class IOUtils {
 
             BuffersJvmKt.readTo(BuffersJvmKt.transferFrom(fileBuffer, inputStream), fileOutputStream, dataArray.length);
         }
+    }
+
+    public static boolean deleteRecursively(File target) throws SecurityException {
+        if(!target.isFile()) {
+            for(File innerFile : Objects.requireNonNullElse(target.listFiles(), new File[]{})) {
+                deleteRecursively(innerFile);
+            }
+        }
+        return target.delete();
     }
 }

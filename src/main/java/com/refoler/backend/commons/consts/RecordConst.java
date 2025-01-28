@@ -13,6 +13,7 @@ public class RecordConst {
 
     public final static String SERVICE_ACTION_TYPE_GET = "action_get_data";
     public final static String SERVICE_ACTION_TYPE_POST = "action_post_data";
+    public final static String SERVICE_ACTION_TYPE_REMOVE = "action_remove_data";
 
     public final static String FILE_PREFIX_DEVICE_FILE_LIST = "$FileList.json";
     public final static String FILE_PREFIX_DEVICE_METADATA = "$Metadata.json";

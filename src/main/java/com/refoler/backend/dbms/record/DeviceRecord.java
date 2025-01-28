@@ -44,6 +44,22 @@ public class DeviceRecord {
         return true;
     }
 
+    public boolean removeFileList() {
+        try {
+            if (loadDeviceMetadata()) {
+                this.deviceRecordFileListCache = "";
+                this.deviceMetadata = this.deviceMetadata.toBuilder().setLastQueriedTime(0).build();
+                updateMetaData();
+
+                IOUtils.deleteRecursively(new File(deviceRecordDirectory, RecordConst.FILE_PREFIX_DEVICE_FILE_LIST));
+                refreshCacheThreshold();
+            } else throw new IOException();
+        } catch (IOException | SecurityException e) {
+            return false;
+        }
+        return true;
+    }
+
     @Nullable
     public String getFileList() throws IOException {
         refreshCacheThreshold();

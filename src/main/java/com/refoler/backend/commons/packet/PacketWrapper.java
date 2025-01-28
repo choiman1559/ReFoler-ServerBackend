@@ -5,6 +5,7 @@ import com.google.protobuf.util.JsonFormat;
 import com.refoler.Refoler;
 import com.refoler.backend.commons.consts.PacketConst;
 import io.ktor.http.HttpStatusCode;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
@@ -53,18 +54,21 @@ public class PacketWrapper {
         return makeErrorPacket(message, "");
     }
 
-    public static PacketWrapper makeErrorPacket(String message, String... extraDescription) {
+    public static PacketWrapper makeErrorPacket(String message, @Nullable String... extraDescription) {
         return makeErrorPacket(message, HttpStatusCode.Companion.getInternalServerError(), extraDescription);
     }
 
-    public static PacketWrapper makeErrorPacket(String message, HttpStatusCode statusCode, String... extraDescription) {
+    public static PacketWrapper makeErrorPacket(String message, HttpStatusCode statusCode, @Nullable String... extraDescription) {
         PacketWrapper packetWrapper = new PacketWrapper();
         Refoler.ResponsePacket.Builder refolerData = Refoler.ResponsePacket.newBuilder();
 
         refolerData.setStatus(PacketConst.STATUS_ERROR);
         refolerData.setErrorCause(message);
 
-        if(extraDescription.length > 0) {
+        if(extraDescription != null && extraDescription.length > 0) {
+            for(int i = 0; i < extraDescription.length; i += 1) {
+                if(extraDescription[i] == null) extraDescription[i] = "";
+            }
             refolerData.addAllExtraData(List.of(extraDescription));
         }
 

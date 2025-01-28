@@ -60,18 +60,18 @@ public class DbPacketProcess implements PacketProcessModel {
     public static void processUserAction(ApplicationCall applicationCall, String serviceType, Refoler.RequestPacket requestPacket, UserRecord userRecord) throws IOException {
         switch (serviceType) {
             case RecordConst.SERVICE_TYPE_DEVICE_REGISTRATION -> {
-                if(requestPacket.getActionName().equals(RecordConst.SERVICE_ACTION_TYPE_GET)) {
-                    userRecord.getDeviceRegistrationList(applicationCall, requestPacket);
-                } else if (requestPacket.getActionName().equals(RecordConst.SERVICE_ACTION_TYPE_POST)) {
-                    userRecord.registerDeviceList(applicationCall, requestPacket);
+                switch (requestPacket.getActionName()) {
+                    case RecordConst.SERVICE_ACTION_TYPE_GET -> userRecord.getDeviceRegistrationList(applicationCall, requestPacket);
+                    case RecordConst.SERVICE_ACTION_TYPE_POST -> userRecord.registerDeviceList(applicationCall, requestPacket);
+                    case RecordConst.SERVICE_ACTION_TYPE_REMOVE -> userRecord.removeDeviceRegistration(applicationCall, requestPacket);
                 }
             }
 
             case RecordConst.SERVICE_TYPE_DEVICE_FILE_LIST -> {
-                if(requestPacket.getActionName().equals(RecordConst.SERVICE_ACTION_TYPE_GET)) {
-                    userRecord.getDeviceFileList(applicationCall, requestPacket);
-                } else if (requestPacket.getActionName().equals(RecordConst.SERVICE_ACTION_TYPE_POST)) {
-                    userRecord.uploadDeviceList(applicationCall, requestPacket);
+                switch (requestPacket.getActionName()) {
+                    case RecordConst.SERVICE_ACTION_TYPE_GET -> userRecord.getDeviceFileList(applicationCall, requestPacket);
+                    case RecordConst.SERVICE_ACTION_TYPE_POST -> userRecord.uploadDeviceList(applicationCall, requestPacket);
+                    case RecordConst.SERVICE_ACTION_TYPE_REMOVE -> userRecord.removeDeviceFileList(applicationCall, requestPacket);
                 }
             }
 

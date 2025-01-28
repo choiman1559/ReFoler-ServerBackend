@@ -2,6 +2,7 @@ package com.refoler.backend.dbms.record;
 
 import com.refoler.Refoler;
 import com.refoler.backend.commons.service.Service;
+import com.refoler.backend.commons.utils.IOUtils;
 import com.refoler.backend.dbms.DbPacketProcess;
 import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.utils.Log;
@@ -83,6 +84,35 @@ public class UserRecord {
 
         DeviceRecord deviceRecord = getDeviceRecordById(requestPacket.getDevice(0).getDeviceId());
         if (deviceRecord.publishFileList(requestPacket.getExtraData())) {
+            Service.replyPacket(applicationCall, PacketWrapper.makePacket(""));
+        } else {
+            Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(RecordConst.ERROR_DATA_DB_IO_FAILED_WRITE));
+        }
+    }
+
+    public void removeDeviceFileList(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) throws IOException {
+        if (DbPacketProcess.checkIfRequestDeviceBlank(applicationCall, requestPacket)) {
+            return;
+        }
+
+        DeviceRecord deviceRecord = getDeviceRecordById(requestPacket.getDevice(0).getDeviceId());
+        if (deviceRecord.removeFileList()) {
+            Service.replyPacket(applicationCall, PacketWrapper.makePacket(""));
+        } else {
+            Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(RecordConst.ERROR_DATA_DB_IO_FAILED_WRITE));
+        }
+    }
+
+    public void removeDeviceRegistration(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) throws IOException {
+        if (DbPacketProcess.checkIfRequestDeviceBlank(applicationCall, requestPacket)) {
+            return;
+        }
+
+        String deviceId = requestPacket.getDevice(0).getDeviceId();
+        DeviceRecord deviceRecord = getDeviceRecordById(deviceId);
+
+        if (IOUtils.deleteRecursively(deviceRecord.deviceRecordDirectory)) {
+            deviceMap.remove(deviceId);
             Service.replyPacket(applicationCall, PacketWrapper.makePacket(""));
         } else {
             Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(RecordConst.ERROR_DATA_DB_IO_FAILED_WRITE));
