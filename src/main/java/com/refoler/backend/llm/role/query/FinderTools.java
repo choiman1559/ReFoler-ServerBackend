@@ -2,6 +2,7 @@ package com.refoler.backend.llm.role.query;
 
 import com.refoler.FileSearch;
 import com.refoler.Refoler;
+import com.refoler.backend.commons.consts.ReFileConst;
 import com.refoler.backend.commons.consts.RecordConst;
 import com.refoler.backend.llm.DeAsyncJob;
 import com.refoler.backend.llm.role.FinderAct;
@@ -46,10 +47,28 @@ public record FinderTools(String UID) {
         FileSearch.Query.Builder queryBuilder = FileSearch.Query.newBuilder();
 
         if (queryWrapper.metadataQuery != null) {
+            int requiredPermission = ReFileConst.PERMISSION_NONE;
+            if (queryWrapper.metadataQuery.permissionCondition == null) {
+                requiredPermission = ReFileConst.PERMISSION_UNKNOWN;
+            } else {
+                if (queryWrapper.metadataQuery.permissionCondition.canExecute) {
+                    requiredPermission |= ReFileConst.PERMISSION_EXECUTABLE;
+                }
+
+                if (queryWrapper.metadataQuery.permissionCondition.canWrite) {
+                    requiredPermission |= ReFileConst.PERMISSION_WRITABLE;
+                }
+
+                if (queryWrapper.metadataQuery.permissionCondition.canRead) {
+                    requiredPermission |= ReFileConst.PERMISSION_READABLE;
+                }
+            }
+
             queryBuilder.setIndexQuery(FileSearch.IndexQuery.newBuilder()
                     .setIsKeywordFullPath(queryWrapper.metadataQuery.isKeywordFullPath)
                     .setExcludeSkippedDir(queryWrapper.metadataQuery.excludeSkippedDir)
                     .setSearchScope(queryWrapper.metadataQuery.searchScope)
+                    .setPermissionCondition(requiredPermission)
                     .setMimeQuery(FileSearch.KeywordQuery.newBuilder()
                             .setIgnoreCase(queryWrapper.metadataQuery.mimeCondition.ignoreCase)
                             .setKeywordCondition(queryWrapper.metadataQuery.mimeCondition.keywordCondition)

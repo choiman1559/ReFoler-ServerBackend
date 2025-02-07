@@ -1,6 +1,5 @@
 package com.refoler.backend.endpoint.provider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -10,10 +9,12 @@ import com.google.firebase.auth.UserRecord;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.refoler.Refoler;
+import com.refoler.backend.commons.consts.EndPointConst;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,10 +56,11 @@ public class FirebaseHelper {
     }
 
     @Nullable
-    @SuppressWarnings("unchecked")
     public static String postFcmMessage(Refoler.RequestPacket requestPacket) {
         try {
-            Map<String, String> newMap = new ObjectMapper().readValue(requestPacket.getExtraData(), Map.class);
+            Map<String, String> newMap = new HashMap<>();
+            newMap.put(EndPointConst.KEY_EXTRA_DATA, requestPacket.getExtraData());
+
             Message message = Message.builder()
                     .putAllData(newMap)
                     .setTopic(requestPacket.getUid())

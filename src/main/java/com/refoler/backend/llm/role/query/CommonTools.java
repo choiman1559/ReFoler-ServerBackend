@@ -1,5 +1,6 @@
 package com.refoler.backend.llm.role.query;
 
+import com.refoler.backend.commons.consts.ReFileConst;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 
@@ -59,5 +60,14 @@ public class CommonTools {
             default -> throw new IllegalArgumentException("Unknown unit: %s".formatted(unit));
         };
         return (long) (value * multiplier);
+    }
+
+    @Tool("Converts unix file, folder permission to human readable values")
+    public QueryWrapper.PermissionCondition rawUnixPermissionToReadable(@P("Unix File permission value to convert. The range is from 0 to 7.") int permission) {
+        QueryWrapper.PermissionCondition permissionCondition = new QueryWrapper.PermissionCondition();
+        permissionCondition.canRead = (permission & ReFileConst.PERMISSION_READABLE) == ReFileConst.PERMISSION_READABLE;
+        permissionCondition.canWrite = (permission & ReFileConst.PERMISSION_WRITABLE) == ReFileConst.PERMISSION_WRITABLE;
+        permissionCondition.canExecute = (permission & ReFileConst.PERMISSION_EXECUTABLE) == ReFileConst.PERMISSION_EXECUTABLE;
+        return permissionCondition;
     }
 }

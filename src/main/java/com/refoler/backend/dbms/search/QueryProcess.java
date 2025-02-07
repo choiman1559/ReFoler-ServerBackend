@@ -2,6 +2,7 @@ package com.refoler.backend.dbms.search;
 
 import com.refoler.FileSearch;
 import com.refoler.backend.commons.consts.QueryConditions;
+import com.refoler.backend.commons.consts.ReFileConst;
 
 import java.net.URLConnection;
 
@@ -51,10 +52,24 @@ public class QueryProcess {
         };
     }
 
+    private boolean processPermission(FileElement fileElement, int requestPermission) {
+        if (requestPermission < ReFileConst.PERMISSION_NONE) {
+            return true;
+        } else if (fileElement.permission == ReFileConst.PERMISSION_UNKNOWN) {
+            return false;
+        } else {
+            return (fileElement.permission & requestPermission) == requestPermission;
+        }
+    }
+
     private boolean processIndex(FileElement fileElement) {
         boolean result = true;
         FileSearch.IndexQuery indexQuery = queryCondition.getIndexQuery();
         String scopeValue = indexQuery.hasSearchScope() ? indexQuery.getSearchScope() : QueryConditions.SCOPE_ALL;
+
+        if (indexQuery.hasPermissionCondition()) {
+            result &= processPermission(fileElement, indexQuery.getPermissionCondition());
+        }
 
         if (fileElement.isFile) {
             if (scopeValue.equals(QueryConditions.SCOPE_FOLDER_ONLY)) {
@@ -80,8 +95,9 @@ public class QueryProcess {
             result &= processIndex(fileElement);
         }
 
-        keywordQuery : if (queryCondition.hasKeywordQuery()) {
-            if(queryCondition.hasIndexQuery() && queryCondition.getIndexQuery().getIsKeywordFullPath()) {
+        keywordQuery:
+        if (queryCondition.hasKeywordQuery()) {
+            if (queryCondition.hasIndexQuery() && queryCondition.getIndexQuery().getIsKeywordFullPath()) {
                 result &= processKeyword(fileElement.path);
                 break keywordQuery;
             }

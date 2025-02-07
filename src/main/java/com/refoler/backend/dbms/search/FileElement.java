@@ -1,5 +1,6 @@
 package com.refoler.backend.dbms.search;
 
+import com.refoler.backend.commons.consts.ReFileConst;
 import org.json.JSONObject;
 
 public class FileElement {
@@ -8,15 +9,12 @@ public class FileElement {
 
     public long lastModified;
     public long size;
+    public int permission;
     public boolean isSkipped = false;
 
     public String getName() {
         String[] pathArrays = path.split("/");
         return pathArrays[pathArrays.length - 1];
-    }
-
-    public boolean includeName(String toFind) {
-        return getName().toLowerCase().contains(toFind.toLowerCase());
     }
 
     public JSONObject toJsonObject() {
@@ -26,6 +24,7 @@ public class FileElement {
         jsonObject.put(ReFileConst.DATA_TYPE_LAST_MODIFIED, lastModified);
         jsonObject.put(ReFileConst.DATA_TYPE_SIZE, size);
         jsonObject.put(ReFileConst.DATA_TYPE_IS_SKIPPED, isSkipped);
+        jsonObject.put(ReFileConst.DATA_TYPE_PERMISSION, permission);
         return jsonObject;
     }
 }

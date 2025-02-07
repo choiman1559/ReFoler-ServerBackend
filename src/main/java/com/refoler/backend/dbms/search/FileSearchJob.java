@@ -1,6 +1,7 @@
 package com.refoler.backend.dbms.search;
 
 import com.refoler.FileSearch;
+import com.refoler.backend.commons.consts.ReFileConst;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,6 +26,7 @@ public class FileSearchJob {
         metadataKeyFilter.add(ReFileConst.DATA_TYPE_LAST_MODIFIED);
         metadataKeyFilter.add(ReFileConst.DATA_TYPE_IS_SKIPPED);
         metadataKeyFilter.add(ReFileConst.DATA_TYPE_SIZE);
+        metadataKeyFilter.add(ReFileConst.DATA_TYPE_PERMISSION);
     }
 
     public boolean searchFor() {
@@ -54,6 +56,12 @@ public class FileSearchJob {
         FileElement fileElement = new FileElement();
         fileElement.path = basePath;
         fileElement.lastModified = subJsonObject.getLong(ReFileConst.DATA_TYPE_LAST_MODIFIED);
+
+        if(subJsonObject.has(ReFileConst.DATA_TYPE_PERMISSION)) {
+            fileElement.permission = subJsonObject.getInt(ReFileConst.DATA_TYPE_PERMISSION);
+        } else {
+            fileElement.permission = ReFileConst.PERMISSION_UNKNOWN;
+        }
 
         if (subJsonObject.getBoolean(ReFileConst.DATA_TYPE_IS_FILE)) {
             fileElement.isFile = true;

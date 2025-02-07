@@ -79,6 +79,9 @@ public class DeviceRecord {
 
     public boolean registerMetaData(Refoler.Device deviceMetadata) {
         try {
+            if(!deviceMetadata.hasLastQueriedTime() && loadDeviceMetadata()) {
+               deviceMetadata = deviceMetadata.toBuilder().setLastQueriedTime(this.deviceMetadata.getLastQueriedTime()).build();
+            }
             this.deviceMetadata = deviceMetadata;
             updateMetaData();
         } catch (IOException e) {

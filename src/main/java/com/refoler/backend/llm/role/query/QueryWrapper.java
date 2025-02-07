@@ -45,6 +45,18 @@ public class QueryWrapper {
         public boolean excludeSkippedDir = false;
         @Description("Determines the type of items to search for. Possible values are \"file_only\", \"folder_only\", and \"all\".")
         public String searchScope;
+        @Description("Set conditions based on the permissions the file or folder has. Can be empty if this condition is not used.")
+        public PermissionCondition permissionCondition;
+    }
+
+    @Description("Specifies Unix-Style file IO Permissions. If each value is absent, the default value is false.")
+    public static class PermissionCondition {
+        @Description("Representing file or folder can be read")
+        public boolean canRead;
+        @Description("Representing file or folder can be written")
+        public boolean canWrite;
+        @Description("Representing file or folder can be executed")
+        public boolean canExecute;
     }
 
     @Description("Search by file path or name")
