@@ -6,6 +6,9 @@ import com.refoler.backend.commons.packet.PacketWrapper
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.plugins.*
 import kotlinx.coroutines.runBlocking
 
 class JsonRequest {
@@ -15,6 +18,11 @@ class JsonRequest {
     }
 
     companion object {
+        @JvmStatic
+        fun getOriginRequestPoint(call: ApplicationCall): RequestConnectionPoint {
+            return call.request.origin
+        }
+
         @Suppress("HttpUrlsUsage")
         @JvmStatic
         fun buildIpcUrl(host: String, port: Int, serviceType: String): String {

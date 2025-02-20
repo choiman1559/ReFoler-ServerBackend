@@ -15,6 +15,7 @@ import com.refoler.backend.commons.consts.EndPointConst;
 import com.refoler.backend.commons.consts.RecordConst;
 import com.refoler.backend.endpoint.provider.FirebaseHelper;
 import io.ktor.http.HttpStatusCode;
+import io.ktor.http.RequestConnectionPoint;
 import io.ktor.server.application.ApplicationCall;
 import io.ktor.server.websocket.DefaultWebSocketServerSession;
 import io.ktor.websocket.CloseReason;
@@ -37,8 +38,17 @@ public class EndPointPacketProcess implements PacketProcessModel {
     @Override
     public void onPacketReceived(ApplicationCall applicationCall, String serviceType, String rawData) throws Exception {
         Refoler.RequestPacket requestPacket = PacketWrapper.parseRequestPacket(rawData);
+        Argument argument = Service.getInstance().getArgument();
 
-        if (Service.getInstance().getArgument().useAuthentication) {
+        checkAuth : if (argument.useAuthentication) {
+            RequestConnectionPoint requestPoint = JsonRequest.getOriginRequestPoint(applicationCall);
+            if(requestPoint.getRemoteAddress().equals(argument.recordNodeHost) && requestPoint.getRemotePort() == argument.recordNodePort) {
+                break checkAuth;
+            }
+            if(requestPoint.getRemoteAddress().equals(argument.llmNodeHost) && requestPoint.getRemotePort() == argument.llmNodePort) {
+                break checkAuth;
+            }
+
             String uid = requestPacket.getUid();
             final String bearerPrefix = "Bearer ";
             final String idToken = applicationCall.getRequest().getHeaders().get(EndPointConst.KEY_AUTHENTICATION);
@@ -58,7 +68,7 @@ public class EndPointPacketProcess implements PacketProcessModel {
         switch (serviceType) {
             case EndPointConst.SERVICE_TYPE_LLM -> handleLLmRoute(applicationCall, requestPacket);
             case EndPointConst.SERVICE_TYPE_CHECK_ALIVE ->
-                    Service.replyPacket(applicationCall, PacketWrapper.makePacket(Service.getInstance().getArgument().version));
+                    Service.replyPacket(applicationCall, PacketWrapper.makePacket(argument.version));
             case EndPointConst.SERVICE_TYPE_FCM_POST -> handleFcmPostRequest(applicationCall, requestPacket);
             default -> handleDefaultRoute(applicationCall, serviceType, requestPacket);
         }
@@ -66,7 +76,8 @@ public class EndPointPacketProcess implements PacketProcessModel {
 
     @Override
     public void onWebSocketSessionConnected(ApplicationCall applicationCall, String serviceType, DefaultWebSocketServerSession socketServerSession) {
-        if (Service.getInstance().getArgument().useAuthentication) {
+        Argument argument = Service.getInstance().getArgument();
+        if (argument.useAuthentication) {
             String uid = applicationCall.getRequest().getHeaders().get(EndPointConst.KET_UID);
             final String bearerPrefix = "Bearer ";
             final String idToken = applicationCall.getRequest().getHeaders().get(EndPointConst.KEY_AUTHENTICATION);
@@ -83,7 +94,6 @@ public class EndPointPacketProcess implements PacketProcessModel {
             }
         }
 
-        Argument argument = Service.getInstance().getArgument();
         switch (serviceType) {
             case EndPointConst.SERVICE_TYPE_LLM -> WebSocketRequest.handleWebSocketProxy(socketServerSession,
                     argument.llmNodeHost, argument.llmNodePort,

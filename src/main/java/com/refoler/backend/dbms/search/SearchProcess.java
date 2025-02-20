@@ -7,6 +7,7 @@ import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.dbms.record.UserRecord;
 import io.ktor.server.application.ApplicationCall;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -23,8 +24,8 @@ public class SearchProcess {
 
         for (int i = 0; i < requestPacket.getDeviceCount(); i++) {
             String deviceId = requestPacket.getDevice(i).getDeviceId();
-            if(deviceFileList[i].isEmpty()) {
-                resultObject.put(deviceId, "");
+            if(deviceFileList[i] == null || deviceFileList[i].isEmpty()) {
+                resultObject.put(deviceId, new JSONArray());
                 continue;
             }
 
@@ -32,7 +33,7 @@ public class SearchProcess {
             if (searchJob.searchFor()) {
                 resultObject.put(deviceId, searchJob.printResult());
             } else {
-                resultObject.put(deviceId, "");
+                resultObject.put(deviceId, new JSONArray());
             }
         }
 

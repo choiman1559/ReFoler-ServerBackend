@@ -2,6 +2,7 @@ package com.refoler.backend.dbms.record;
 
 import com.google.protobuf.util.JsonFormat;
 import com.refoler.Refoler;
+import com.refoler.backend.commons.service.GCollectTask;
 import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.commons.utils.IOUtils;
 import com.refoler.backend.commons.consts.RecordConst;
@@ -11,7 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class DeviceRecord {
+public class DeviceRecord implements GCollectTask.GCollectable {
     @SuppressWarnings("unused")
     ArrayList<BlobRecord> downloadableLinkList; // Not Used For Now
 
@@ -118,6 +119,7 @@ public class DeviceRecord {
         return null;
     }
 
+    @Override
     public boolean cleanUpCache() {
         if (deviceRecordFileListCache != null &&
                 (Service.getInstance().getArgument().recordHotRecordLifetime + deviceRecordFileListCacheTimeInMillis) < System.currentTimeMillis()) {

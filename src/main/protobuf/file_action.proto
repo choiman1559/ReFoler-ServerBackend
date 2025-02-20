@@ -1,0 +1,42 @@
+syntax = "proto3";
+package com.refoler;
+import "file_search.proto";
+
+enum ActionType {       // PARAMS                                             Effective of override
+  // Basic FS Ops                                                             (If target exists)
+  OP_NONE = 0;          // NOP                                                false
+  OP_DELETE = 1;        // USE: targets, scope                                false
+  OP_NEW_FILE = 2;      // USE: targets                                       true
+  OP_MAKE_DIR = 3;      // USE: targets                                       false
+  OP_COPY = 4;          // USE: dest <- targets, scope                        true
+  OP_CUT = 5;           // USE: dest <- targets, scope                        true
+  OP_RENAME = 6;        // USE: single target -> dest                         true
+  OP_HASH = 7;          // USE: targets (REF: dest for Hash sel, def: md5)    false
+
+  // Network Related Ops
+  OP_UPLOAD = 10;       // USE: targets, scope                                false
+  OP_DOWNLOAD = 11;     // USE: targets (server)     * Not Used *             true
+  OP_READ_PART = 12;    // USE: dest -> [buffer size, start byte, end byte]   false
+  OP_WRITE_PART = 13;   // USE: dest -> [buffer size, start byte, end byte]   true
+}
+
+message ActionRequest {
+  string challenge_code = 1;
+  ActionType action_type = 2;
+  repeated string target_files = 3;
+  optional string dest_dir = 4;
+  optional Query query_scope = 5;
+  optional bool override_exists = 6;
+}
+
+message ActionResult {
+  bool result_success = 1;
+  string op_paths = 2;
+  optional string error_cause = 3;
+  repeated string extra_data = 4;
+}
+
+message ActionResponse {
+  string challenge_code = 1;
+  repeated ActionResult result = 2;
+}

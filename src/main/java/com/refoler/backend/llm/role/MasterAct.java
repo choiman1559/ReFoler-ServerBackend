@@ -2,6 +2,7 @@ package com.refoler.backend.llm.role;
 
 import com.refoler.Refoler;
 import com.refoler.backend.commons.consts.LlmConst;
+import com.refoler.backend.commons.service.GCollectTask;
 import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.commons.utils.Log;
 import com.refoler.backend.commons.utils.WebSocketUtil;
@@ -20,7 +21,7 @@ import io.ktor.server.websocket.DefaultWebSocketServerSession;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MasterAct {
+public class MasterAct implements GCollectTask.GCollectable {
 
     private final UserSession currentUserSession;
     private final Refoler.Device requestedDevice;
@@ -29,6 +30,7 @@ public class MasterAct {
     public final HashMap<String, FinderAct> finderActHashMap = new HashMap<>();
     private DefaultWebSocketServerSession webSocketServerSession;
     private String cachedMessages;
+    private volatile long lastStartedTime;
 
     public MasterAct(UserSession userSession, Refoler.Device requestedDevice) {
         this.currentUserSession = userSession;
@@ -46,13 +48,17 @@ public class MasterAct {
         TokenStream chat(/*@MemoryId int uniqueId,*/ @UserMessage String message);
     }
 
+    public Refoler.Device getRequestedDevice() {
+        return requestedDevice;
+    }
+
     public String getUid() {
         return this.currentUserSession.uid;
     }
 
     public FinderAct getFinderActById(String deviceId) {
         FinderAct finderAct = this.finderActHashMap.get(deviceId);
-        if(finderAct == null) {
+        if (finderAct == null) {
             finderAct = new FinderAct(getUid());
             this.finderActHashMap.put(deviceId, finderAct);
         }
@@ -83,6 +89,8 @@ public class MasterAct {
 
     public void performChat(String message) {
         cachedMessages = "";
+        lastStartedTime = System.currentTimeMillis();
+
         TokenStream tokenStream = masterAssistant.chat(/*requestedDevice.getDeviceId().hashCode(),*/ message); //TODO - persistent DB memory
         tokenStream
                 .onToolExecuted((ToolExecution toolExecution) -> Log.printDebug("LLM_ToolExecuted", toolExecution.toString()))
@@ -94,11 +102,19 @@ public class MasterAct {
                     }
                 })
                 .onNext((String token) -> {
+                    token = token
+                            .replace(System.lineSeparator(), LlmConst.RAW_DATA_LINE_SEPARATION)
+                            .replace(" ", LlmConst.RAW_DATA_SPACE);
+
+                    if(token.isEmpty()) {
+                        token = LlmConst.RAW_DATA_SPACE;
+                    }
+
                     if (isSocketAlive()) {
-                        WebSocketUtil.replyWebSocket(webSocketServerSession, "%s %s".formatted(cachedMessages, token).trim());
+                        WebSocketUtil.replyWebSocket(webSocketServerSession, "%s%s".formatted(cachedMessages, token).trim());
                         cachedMessages = "";
                     } else {
-                        cachedMessages += " %s".formatted(token);
+                        cachedMessages += "%s".formatted(token);
                     }
                 })
                 .onComplete((Response<AiMessage> complete) -> {
@@ -111,5 +127,17 @@ public class MasterAct {
 
         tokenStream.start();
         isRunning.set(true);
+    }
+
+    @Override
+    public boolean cleanUpCache() {
+        if (!isRunning.get() && !isSocketAlive() &&
+                cachedMessages != null && !cachedMessages.isEmpty() &&
+                (Service.getInstance().getArgument().recordHotRecordLifetime + lastStartedTime) < System.currentTimeMillis()) {
+            currentUserSession.messageQueryHashMap.remove(requestedDevice.getDeviceId());
+            cachedMessages = "";
+            return true;
+        }
+        return false;
     }
 }

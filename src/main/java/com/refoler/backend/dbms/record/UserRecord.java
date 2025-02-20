@@ -1,6 +1,7 @@
 package com.refoler.backend.dbms.record;
 
 import com.refoler.Refoler;
+import com.refoler.backend.commons.service.GCollectTask;
 import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.commons.utils.IOUtils;
 import com.refoler.backend.dbms.DbPacketProcess;
@@ -14,7 +15,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.*;
 
-public class UserRecord {
+public class UserRecord extends GCollectTask {
 
     private static final String LogTAG = "UserRecord";
     private final String UID;
@@ -24,6 +25,7 @@ public class UserRecord {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public UserRecord(String uid) {
+        super();
         this.UID = uid;
         this.deviceMap = new ConcurrentHashMap<>();
         userRecordDirectory = new File(Service.getInstance().getArgument().recordDirectoryPath, uid);
@@ -35,8 +37,6 @@ public class UserRecord {
         for (File deviceDir : Objects.requireNonNullElse(userRecordDirectory.listFiles(), new File[0])) {
             deviceMap.put(deviceDir.getName(), new DeviceRecord(this, deviceDir.getName()));
         }
-
-        igniteIntervalGcThread();
     }
 
     public File getUserRecordDirectory() {
@@ -132,6 +132,7 @@ public class UserRecord {
                     if(deviceMetadataArray[i] == null) isFailed = true;
                 }
             } else {
+                Log.printDebug("ddd", String.valueOf(deviceMap));
                 deviceMetadataArray = new String[deviceMap.size()];
                 int deviceListIndex = 0;
                 for (String deviceIdKey : deviceMap.keySet()) {
@@ -143,7 +144,7 @@ public class UserRecord {
             }
 
             if(isFailed || deviceMetadataArray.length == 0) {
-                Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(RecordConst.ERROR_DATA_DEVICE_INFO_NOT_AVAILABLE));
+                Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket(RecordConst.ERROR_DATA_DEVICE_INFO_NOT_AVAILABLE, deviceMetadataArray));
             } else {
                 Service.replyPacket(applicationCall, PacketWrapper.makePacket(deviceMetadataArray));
             }
@@ -174,13 +175,13 @@ public class UserRecord {
         return deviceMap.get(key);
     }
 
-    private void igniteIntervalGcThread() {
-        final long gcInterval = Service.getInstance().getArgument().recordGcInterval;
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(this::performIntervalGc, gcInterval, gcInterval, TimeUnit.MILLISECONDS);
+    @Override
+    public long getGcIgniteInterval() {
+        return Service.getInstance().getArgument().recordGcInterval;
     }
 
-    private void performIntervalGc() {
+    @Override
+    public void performIntervalGc() {
         int cleanedCacheCount = 0;
         for (String deviceRecordKey : deviceMap.keySet()) {
              DeviceRecord deviceRecord = getDeviceRecordById(deviceRecordKey);

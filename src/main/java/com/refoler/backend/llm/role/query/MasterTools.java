@@ -1,5 +1,6 @@
 package com.refoler.backend.llm.role.query;
 
+import com.google.protobuf.util.JsonFormat;
 import com.refoler.FileSearch;
 import com.refoler.Refoler;
 import com.refoler.backend.commons.consts.QueryConditions;
@@ -16,7 +17,8 @@ import java.util.Map;
 
 @SuppressWarnings("unused")
 public record MasterTools(MasterAct masterAct) {
-    @Tool("Retrieves a list of all devices registered to the service. " +
+
+    @Tool("Retrieves a list of all devices registered to the service, including current device. " +
             "Note that element \"last_queried_time\" is unix time, " +
             "therefore you should convert it to human-readable format before print.")
     public List<String> getRegisteredDeviceList() {
@@ -26,6 +28,17 @@ public record MasterTools(MasterAct masterAct) {
 
         DeAsyncJob<List<String>> getJob = FinderAct.requestRecordQuery(requestPacket.build(), RecordConst.SERVICE_TYPE_DEVICE_REGISTRATION);
         return getJob.runAndWait();
+    }
+
+    @Tool("Retrieves currently using device information. " +
+            "Note that element \"last_queried_time\" is unix time, " +
+            "therefore you should convert it to human-readable format before print.")
+    public String getCurrentDeviceList() {
+        try {
+            return JsonFormat.printer().print(masterAct.getRequestedDevice());
+        } catch (Exception e) {
+            return "Error occurred while processing device information. Abort.";
+        }
     }
 
     @Tool("Searches for files and folders on a device specified by a given keyword. " +

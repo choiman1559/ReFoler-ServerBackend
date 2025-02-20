@@ -40,7 +40,7 @@ public class Argument {
     public String littleModelName;
     public String openAiTokenKey;
 
-    // For DBMS Operation Mode
+    // For DBMS Operation Mode (+ LLM Caching)
     public String recordDirectoryPath;
     public long recordHotRecordLifetime;
     public long recordGcInterval;
