@@ -44,7 +44,11 @@ public class MasterAct implements GCollectTask.GCollectable {
 
     public interface MasterAssistant {
         @SuppressWarnings("UnusedReturnValue")
-        @SystemMessage("You are a useful assistant in managing the user's files across devices.")
+        @SystemMessage("You are a useful assistant in managing the user's files across devices. " +
+                "Note that You must check the device list in advance before performing any file operations. " +
+                "Keep in mind that you should not expose device id to user directly since its very sensitive information. " +
+                "Additionally, When you indicating a path, you must wrap exact path with markdown link with device id, (seperated by \"" + LlmConst.RAW_DATA_PATH_TOKEN + "\") " +
+                "For example, [/some/location/file.txt](/some/location/file.txt" + LlmConst.RAW_DATA_PATH_TOKEN + "some_device_id)")
         TokenStream chat(/*@MemoryId int uniqueId,*/ @UserMessage String message);
     }
 
@@ -106,7 +110,7 @@ public class MasterAct implements GCollectTask.GCollectable {
                             .replace(System.lineSeparator(), LlmConst.RAW_DATA_LINE_SEPARATION)
                             .replace(" ", LlmConst.RAW_DATA_SPACE);
 
-                    if(token.isEmpty()) {
+                    if (token.isEmpty()) {
                         token = LlmConst.RAW_DATA_SPACE;
                     }
 

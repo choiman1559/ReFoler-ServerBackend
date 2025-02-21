@@ -10,4 +10,5 @@ public class LlmConst {
     public static final String RAW_DATA_ERROR_THROWN = "$exception_thrown;";
     public static final String RAW_DATA_LINE_SEPARATION = "$new_line;";
     public static final String RAW_DATA_SPACE = "$space;";
+    public static final String RAW_DATA_PATH_TOKEN = "$path;";
 }
