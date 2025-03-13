@@ -9,13 +9,15 @@ import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.utils.Log;
 import com.refoler.backend.commons.consts.RecordConst;
 import io.ktor.server.application.ApplicationCall;
+import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.*;
 
-public class UserRecord extends GCollectTask {
+public class UserRecord extends GCollectTask<String> {
 
     private static final String LogTAG = "UserRecord";
     private final String UID;
@@ -176,22 +178,29 @@ public class UserRecord extends GCollectTask {
     }
 
     @Override
-    public long getGcIgniteInterval() {
+    public long requireGcIgniteInterval() {
         return Service.getInstance().getArgument().recordGcInterval;
     }
 
     @Override
-    public void performIntervalGc() {
-        int cleanedCacheCount = 0;
-        for (String deviceRecordKey : deviceMap.keySet()) {
-             DeviceRecord deviceRecord = getDeviceRecordById(deviceRecordKey);
-             if(deviceRecord.cleanUpCache()) {
-                 cleanedCacheCount += 1;
-             }
-        }
+    public @NonNull Set<String> requireKeySet() {
+        return deviceMap.keySet();
+    }
 
+    @Override
+    public GCollectable requireCollectableFromKey(String key) {
+        return getDeviceRecordById(key);
+    }
+
+    @Override
+    public void onGCollected(int cleanedCacheCount) {
         if(cleanedCacheCount > 0) {
             Log.print(LogTAG, "GC Triggered! UID: %s, Cleaned-Up %d in-memory cache(s).".formatted(UID, cleanedCacheCount));
         }
+    }
+
+    @Override
+    public void onGCollectPerform() {
+        super.onGCollectPerform();
     }
 }

@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DeAsyncJob<T> {
     AsyncRunnable<T> runnable;
     AtomicReference<T> resultAtomic;
+    private final Object lock = new Object();
 
     public interface AsyncRunnable<T> {
         void run(DeAsyncJob<T> job);
@@ -18,15 +19,24 @@ public class DeAsyncJob<T> {
     }
 
     @NotNull
-    public synchronized T runAndWait() {
+    public T runAndWait() {
         runnable.run(this);
-        while (resultAtomic.get() == null) {
-            Thread.onSpinWait();
+        synchronized (lock) {
+            while (resultAtomic.get() == null) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    Thread.onSpinWait();
+                }
+            }
         }
         return resultAtomic.get();
     }
 
     public void setResult(@NotNull T resultObj) {
-        resultAtomic.set(resultObj);
+        synchronized (lock) {
+            resultAtomic.set(resultObj);
+            lock.notifyAll();
+        }
     }
 }

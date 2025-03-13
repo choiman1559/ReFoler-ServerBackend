@@ -47,6 +47,9 @@ fun Application.configureSockets() {
                     val listener = WebSocketUtil.getSocketFrameIncomeListener(socketSession)
                     listener?.onIncoming(frame.readBytes())
                 }
+
+                Log.printDebug(LOG_TAG, "Disconnected: $socketSession")
+                WebSocketUtil.getSocketDisconnectListener(socketSession)?.onDisconnect()
             } else {
                 WebSocketUtil.closeWebSocket(this, CloseReason.Codes.PROTOCOL_ERROR, PacketConst.ERROR_ILLEGAL_ARGUMENT)
             }

@@ -1,6 +1,7 @@
 package com.refoler.backend.commons.utils
 
 import com.refoler.backend.commons.utils.WebSocketUtil.Companion.registerOnDataIncomeSocket
+import com.refoler.backend.commons.utils.WebSocketUtil.Companion.registerOnDisconnectSocket
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
@@ -32,6 +33,15 @@ class WebSocketRequest {
 
                 val sessionAtomic = AtomicReference<WebSocketSession>()
                 launch {
+                    registerOnDisconnectSocket(socketServerSession) {
+                        val clientSessionAtomic = sessionAtomic.get()
+                        runBlocking {
+                            if(clientSessionAtomic != null && clientSessionAtomic.isActive) {
+                                clientSessionAtomic.close()
+                            }
+                        }
+                    }
+
                     registerOnDataIncomeSocket(socketServerSession,
                         (WebSocketUtil.OnSocketFrameIncomeListener { data: ByteArray ->
                             runBlocking {
@@ -43,17 +53,6 @@ class WebSocketRequest {
                     )
                 }
 
-                CoroutineScope(Dispatchers.IO).launch {
-                    while(socketServerSession.isActive) {
-                        delay(PING_INTERVAL)
-                    }
-
-                    val clientSessionAtomic = sessionAtomic.get()
-                    if(clientSessionAtomic != null && clientSessionAtomic.isActive) {
-                        clientSessionAtomic.close()
-                    }
-                }
-
                 client.webSocket (
                     method = HttpMethod.Get,
                     host = host, port = port, path = path
@@ -63,6 +62,10 @@ class WebSocketRequest {
 
                     for (received in clientSession.incoming) {
                         socketServerSession.send(received.readBytes())
+                    }
+
+                    if(socketServerSession.isActive) {
+                        socketServerSession.close()
                     }
                 }
             }

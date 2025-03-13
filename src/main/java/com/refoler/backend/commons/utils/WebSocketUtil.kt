@@ -12,12 +12,22 @@ class WebSocketUtil {
         fun onIncoming(data: ByteArray)
     }
 
+    fun interface OnSocketDisconnectListener {
+        fun onDisconnect()
+    }
+
     companion object {
         private var onSocketFrameIncomeListener: ConcurrentMap<DefaultWebSocketServerSession, OnSocketFrameIncomeListener> =
+            ConcurrentMap()
+        private var onSocketDisconnectListener: ConcurrentMap<DefaultWebSocketServerSession, OnSocketDisconnectListener> =
             ConcurrentMap()
 
         fun getSocketFrameIncomeListener(webSocketServerSession: DefaultWebSocketServerSession): OnSocketFrameIncomeListener? {
             return this.onSocketFrameIncomeListener[webSocketServerSession]
+        }
+
+        fun getSocketDisconnectListener(webSocketServerSession: DefaultWebSocketServerSession): OnSocketDisconnectListener? {
+            return this.onSocketDisconnectListener[webSocketServerSession]
         }
 
         @JvmStatic
@@ -26,6 +36,23 @@ class WebSocketUtil {
             listener: OnSocketFrameIncomeListener
         ) {
             this.onSocketFrameIncomeListener[webSocketServerSession] = listener
+        }
+
+        @JvmStatic
+        fun registerOnDisconnectSocket(
+            webSocketServerSession: DefaultWebSocketServerSession,
+            listener: OnSocketDisconnectListener
+        ) {
+            this.onSocketDisconnectListener[webSocketServerSession] = listener
+        }
+
+        @JvmStatic
+        fun removeOnDataIncomeSocket(
+            webSocketServerSession: DefaultWebSocketServerSession,
+        ) {
+            if (this.onSocketFrameIncomeListener.containsKey(webSocketServerSession)) {
+                this.onSocketFrameIncomeListener.remove(webSocketServerSession)
+            }
         }
 
         @JvmStatic
@@ -47,9 +74,9 @@ class WebSocketUtil {
             message: String
         ) {
             runBlocking {
+                removeOnDataIncomeSocket(socketServerSession)
                 socketServerSession.close(CloseReason(closeReason, message))
             }
-            this.onSocketFrameIncomeListener.remove(socketServerSession)
         }
 
         @JvmStatic

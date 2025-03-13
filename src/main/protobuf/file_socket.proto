@@ -1,0 +1,26 @@
+syntax = "proto3";
+package com.refoler;
+
+enum ProcedureType {              //    PARAMETERS                                RETURNS
+  FUNC_CONTROL = 0;               //    =================================================================
+  FUNC_READ_BYTES = 1;            //    [buffer_size, start_offset, length]       (bytes) read_byte_array
+  FUNC_WRITE_BYTES = 2;           //    [bytes_to_write, start_offset, length]    (void)
+  FUNC_GET_FILE_LENGTH = 3;       //    []                                        (int) file_length
+  FUNC_SET_FILE_LENGTH = 4;       //    [new_file_length]                         (void)
+  FUNC_CLOSE = 5;                 //    []                                        (void)
+}
+
+enum ControlProcedure {
+  CTRL_ACK = 0;
+  CTRL_EOL = 1;
+  CTRL_ERROR = 2;
+  CTRL_DONE = 3;
+  CTRL_CLOSE = 8;
+}
+
+message Procedure {
+  ProcedureType type = 1;
+  optional ControlProcedure control = 2;
+  repeated bytes parameter_data = 3;
+  repeated bytes return_data = 4;
+}

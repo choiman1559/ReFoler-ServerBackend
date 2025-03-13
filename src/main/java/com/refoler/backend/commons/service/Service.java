@@ -9,7 +9,6 @@ import com.refoler.backend.llm.LlmPacketProcess;
 import io.ktor.http.HttpStatusCode;
 import io.ktor.server.application.ApplicationCall;
 import io.ktor.server.websocket.DefaultWebSocketServerSession;
-import io.ktor.websocket.Frame;
 
 public class Service {
     private static Service instance;

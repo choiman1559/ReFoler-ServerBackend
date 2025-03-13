@@ -1,6 +1,8 @@
 syntax = "proto3";
 package com.refoler;
+
 import "file_search.proto";
+import "file_action.proto";
 
 enum DeviceType {
   DEVICE_TYPE_ANDROID = 0;
@@ -8,6 +10,7 @@ enum DeviceType {
   DEVICE_TYPE_WEB = 2;
   DEVICE_TYPE_IOS = 3;
   DEVICE_TYPE_CLI = 4;
+  DEVICE_TYPE_AGENT = 5;
 }
 
 enum DeviceFormfactor {
@@ -36,6 +39,7 @@ message ResponsePacket {
   string error_cause = 2;
   repeated string extra_data = 3;
   repeated Device device = 4;
+  optional ActionResponse file_action = 5;
 }
 
 message RequestPacket {
@@ -44,5 +48,7 @@ message RequestPacket {
   repeated Device device = 3;
   optional string extra_data = 4;
   optional string data_decrypt_key = 5;
+
   optional Query file_query = 6;
+  optional ActionRequest file_action = 7;
 }

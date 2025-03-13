@@ -10,12 +10,14 @@ import com.refoler.backend.commons.utils.WebSocketUtil;
 import io.ktor.server.application.ApplicationCall;
 import io.ktor.server.websocket.DefaultWebSocketServerSession;
 import io.ktor.websocket.CloseReason;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class UserSession extends GCollectTask {
+public class UserSession extends GCollectTask<String> {
 
     private static final String LogTAG = "LLM_UserSession";
     public final String uid;
@@ -65,17 +67,29 @@ public class UserSession extends GCollectTask {
     }
 
     @Override
-    public void performIntervalGc() {
-        int cleanedCacheCount = 0;
-        for (String deviceRecordKey : masterActConcurrentHashMap.keySet()) {
-            MasterAct masterAct = masterActConcurrentHashMap.get(deviceRecordKey);
-            if(masterAct.cleanUpCache()) {
-                cleanedCacheCount += 1;
-            }
-        }
+    public long requireGcIgniteInterval() {
+        return Service.getInstance().getArgument().recordGcInterval;
+    }
 
+    @Override
+    public GCollectable requireCollectableFromKey(String key) {
+        return masterActConcurrentHashMap.get(key);
+    }
+
+    @Override
+    public @NonNull Set<String> requireKeySet() {
+        return masterActConcurrentHashMap.keySet();
+    }
+
+    @Override
+    public void onGCollected(int cleanedCacheCount) {
         if(cleanedCacheCount > 0) {
             Log.print(LogTAG, "GC Triggered! UID: %s, Cleaned-Up %d in-memory cache(s).".formatted(uid, cleanedCacheCount));
         }
+    }
+
+    @Override
+    public void onGCollectPerform() {
+        super.onGCollectPerform();
     }
 }

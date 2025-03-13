@@ -27,6 +27,8 @@ public class Argument {
     // For DBMS Node access for Endpoint & LLM Node
     public int recordNodePort;
     public String recordNodeHost;
+    public int endpointNodePort;
+    public String endpointNodeHost;
 
     // For Endpoint Operation Mode
     public int llmNodePort;

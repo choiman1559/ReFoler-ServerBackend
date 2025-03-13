@@ -60,11 +60,13 @@ dependencies {
     implementation "com.google.protobuf:protobuf-java-util:4.29.3"
     implementation "com.google.firebase:firebase-admin:9.4.3"
 
-    implementation 'org.json:json:20250107'
+    implementation "org.json:json:20250107"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.17.1"
     implementation "ch.qos.logback:logback-classic:1.5.16"
-    implementation 'dev.langchain4j:langchain4j:1.0.0-alpha1'
-    implementation 'dev.langchain4j:langchain4j-open-ai:1.0.0-alpha1'
+
+    implementation "dev.langchain4j:langchain4j:$langchain4j_version"
+    implementation "dev.langchain4j:langchain4j-open-ai:$langchain4j_version"
+    implementation "dev.langchain4j:langchain4j-local-ai:$langchain4j_version"
 
     testImplementation "io.ktor:ktor-server-test-host-jvm"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"

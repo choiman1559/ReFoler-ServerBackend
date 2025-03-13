@@ -35,9 +35,9 @@ public class LlmPacketProcess implements PacketProcessModel {
     public LlmPacketProcess() throws IOException {
         userSessionHashMap = new HashMap<>();
         Argument argument = Service.getInstance().getArgument();
-        String openAiKey = IOUtils.readFrom(new File(argument.openAiTokenKey));
 
         if (argument.llmServerEndpoint == null || argument.llmServerEndpoint.isEmpty()) {
+            String openAiKey = IOUtils.readFrom(new File(argument.openAiTokenKey));
             bigModel = OpenAiStreamingChatModel.builder()
                     .apiKey(openAiKey)
                     .modelName(argument.bigModelName)

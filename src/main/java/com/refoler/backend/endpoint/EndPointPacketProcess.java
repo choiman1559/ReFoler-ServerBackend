@@ -40,12 +40,13 @@ public class EndPointPacketProcess implements PacketProcessModel {
         Refoler.RequestPacket requestPacket = PacketWrapper.parseRequestPacket(rawData);
         Argument argument = Service.getInstance().getArgument();
 
-        checkAuth : if (argument.useAuthentication) {
+        checkAuth:
+        if (argument.useAuthentication) {
             RequestConnectionPoint requestPoint = JsonRequest.getOriginRequestPoint(applicationCall);
-            if(requestPoint.getRemoteAddress().equals(argument.recordNodeHost) && requestPoint.getRemotePort() == argument.recordNodePort) {
+            if (requestPoint.getRemoteAddress().equals(argument.recordNodeHost) && requestPoint.getRemotePort() == argument.recordNodePort) {
                 break checkAuth;
             }
-            if(requestPoint.getRemoteAddress().equals(argument.llmNodeHost) && requestPoint.getRemotePort() == argument.llmNodePort) {
+            if (requestPoint.getRemoteAddress().equals(argument.llmNodeHost) && requestPoint.getRemotePort() == argument.llmNodePort) {
                 break checkAuth;
             }
 
@@ -69,7 +70,8 @@ public class EndPointPacketProcess implements PacketProcessModel {
             case EndPointConst.SERVICE_TYPE_LLM -> handleLLmRoute(applicationCall, requestPacket);
             case EndPointConst.SERVICE_TYPE_CHECK_ALIVE ->
                     Service.replyPacket(applicationCall, PacketWrapper.makePacket(argument.version));
-            case EndPointConst.SERVICE_TYPE_FCM_POST -> handleFcmPostRequest(applicationCall, requestPacket);
+            case EndPointConst.SERVICE_TYPE_FCM_POST ->
+                    FcmProxyProcess.getInstance().publishFcmPacket(applicationCall, requestPacket);
             default -> handleDefaultRoute(applicationCall, serviceType, requestPacket);
         }
     }
@@ -103,21 +105,15 @@ public class EndPointPacketProcess implements PacketProcessModel {
                     argument.recordNodeHost, argument.recordNodePort,
                     PacketConst.API_ROUTE_SCHEMA.replace("{version}", "v1").replace("{service_type}", serviceType));
 
+            case EndPointConst.SERVICE_TYPE_TRANSFER_FILE_PART ->
+                    PeerSocketProcess.getInstance().handleEncounterSocket(socketServerSession);
+
+            case EndPointConst.SERVICE_TYPE_FCM_POST ->
+                    FcmProxyProcess.getInstance().handleWebSocketRoute(socketServerSession);
+
             default ->
                     WebSocketUtil.closeWebSocket(socketServerSession, CloseReason.Codes.VIOLATED_POLICY, PacketConst.ERROR_SERVICE_NOT_FOUND);
         }
-    }
-
-    private void handleFcmPostRequest(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) throws InvalidProtocolBufferException {
-        PacketWrapper packetWrapper;
-        String result = FirebaseHelper.postFcmMessage(requestPacket);
-        if (result != null && !result.isEmpty()) {
-            packetWrapper = PacketWrapper.makePacket(result);
-        } else {
-            packetWrapper = PacketWrapper.makeErrorPacket(PacketConst.ERROR_INTERNAL_ERROR);
-        }
-
-        Service.replyPacket(applicationCall, packetWrapper);
     }
 
     private void handleLLmRoute(ApplicationCall applicationCall, Refoler.RequestPacket requestPacket) {

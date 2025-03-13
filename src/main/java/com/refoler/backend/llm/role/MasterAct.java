@@ -10,9 +10,7 @@ import com.refoler.backend.llm.LlmPacketProcess;
 
 import com.refoler.backend.llm.role.query.CommonTools;
 import com.refoler.backend.llm.role.query.MasterTools;
-import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.output.Response;
 import dev.langchain4j.service.*;
 import dev.langchain4j.service.tool.ToolExecution;
 
@@ -105,7 +103,7 @@ public class MasterAct implements GCollectTask.GCollectable {
                         error.printStackTrace();
                     }
                 })
-                .onNext((String token) -> {
+                .onPartialResponse((String token) -> {
                     token = token
                             .replace(System.lineSeparator(), LlmConst.RAW_DATA_LINE_SEPARATION)
                             .replace(" ", LlmConst.RAW_DATA_SPACE);
@@ -121,8 +119,8 @@ public class MasterAct implements GCollectTask.GCollectable {
                         cachedMessages += "%s".formatted(token);
                     }
                 })
-                .onComplete((Response<AiMessage> complete) -> {
-                    Log.printDebug("MasterAct_Completed", complete.content().text());
+                .onCompleteResponse(chatResponse -> {
+                    Log.printDebug("MasterAct_Completed", chatResponse.aiMessage().text());
                     cleanUpChat(message);
                     if (isSocketAlive()) {
                         WebSocketUtil.replyWebSocket(webSocketServerSession, LlmConst.RAW_DATA_END_OF_CONVERSATION);

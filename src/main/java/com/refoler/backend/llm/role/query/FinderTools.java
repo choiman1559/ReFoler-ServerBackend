@@ -1,18 +1,23 @@
 package com.refoler.backend.llm.role.query;
 
+import com.refoler.FileAction;
 import com.refoler.FileSearch;
 import com.refoler.Refoler;
+import com.refoler.backend.commons.consts.DirectActionConst;
 import com.refoler.backend.commons.consts.ReFileConst;
 import com.refoler.backend.commons.consts.RecordConst;
 import com.refoler.backend.llm.DeAsyncJob;
 import com.refoler.backend.llm.role.FinderAct;
+
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 @SuppressWarnings("unused")
-public record FinderTools(String UID) {
+public record FinderTools(String UID, String agentUUID) {
 
     @Tool("Queries items in the device's file/folder list based on given conditions. " +
             "File name/path, size, and modification time can be provided as individual conditions, and these conditions can be applied simultaneously." +
@@ -30,7 +35,7 @@ public record FinderTools(String UID) {
         return result.isEmpty() ? "" : result.getFirst();
     }
 
-    @Tool("Retrieves entire file/folder list of device." +
+    @Tool("Retrieves entire file/folder list of device. " +
             "WARING: Avoid using this function unless absolutely necessary. " +
             "Always prefer \"queryComplicatedConditions\" tool and only use this function if you cannot get satisfactory results.")
     public String getEntireDeviceFileList(@P("Device id to retrieve entire file list.") String deviceId) {
@@ -41,6 +46,67 @@ public record FinderTools(String UID) {
 
         String result = FinderAct.requestRecordQuery(requestPacket.build(), RecordConst.SERVICE_TYPE_DEVICE_FILE_LIST).runAndWait().getFirst();
         return result.isEmpty() ? "Device hasn't uploaded file list yet. Abort." : result;
+    }
+
+    @Tool("Post file action request. " +
+            "Returns true if request is sent successfully, otherwise false.")
+    public boolean requestFileAction(@P("Device id to retrieve file hash.") String deviceId,
+                                    @P("File action information to request") ActionWrapper.ActionRequestImpl action) {
+        FileAction.ActionRequest.Builder actionRequest = buildActionRequest(deviceId, action);
+        Refoler.RequestPacket.Builder requestBuilder = Refoler.RequestPacket.newBuilder();
+        requestBuilder.addDevice(getAgentDevice());
+        requestBuilder.addDevice(Refoler.Device.newBuilder().setDeviceId(deviceId).build());
+        requestBuilder.setFileAction(actionRequest);
+
+        DeAsyncJob<Boolean> worker = FinderAct.requestFcmPost(requestBuilder.build(), DirectActionConst.SERVICE_TYPE_FILE_ACTION);
+        if(worker == null) {
+            return false;
+        } else {
+            return worker.runAndWait();
+        }
+    }
+
+    private FileAction.ActionRequest.Builder buildActionRequest(String deviceId, ActionWrapper.ActionRequestImpl actionWrapper) {
+        FileAction.ActionRequest.Builder actionBuilder = FileAction.ActionRequest.newBuilder();
+        actionBuilder.setOverrideExists(true);
+
+        actionBuilder.setActionType(switch (actionWrapper.actionType) {
+            case OP_DELETE -> FileAction.ActionType.OP_DELETE;
+            case OP_NEW_FILE -> FileAction.ActionType.OP_NEW_FILE;
+            case OP_MAKE_DIR -> FileAction.ActionType.OP_MAKE_DIR;
+            case OP_COPY -> FileAction.ActionType.OP_COPY;
+            case OP_CUT -> FileAction.ActionType.OP_CUT;
+            case OP_RENAME -> FileAction.ActionType.OP_RENAME;
+        });
+
+        if(actionWrapper.queryWrapper != null) {
+            actionBuilder.setQueryScope(buildQueryWrapper(actionWrapper.queryWrapper));
+        }
+
+        if(actionWrapper.targetFiles != null && actionWrapper.targetFiles.isEmpty()) {
+            actionBuilder.addAllTargetFiles(actionWrapper.targetFiles);
+        }
+
+        if(actionWrapper.destinationDirectory != null && !actionWrapper.destinationDirectory.isBlank()) {
+            actionBuilder.setDestDir(actionWrapper.destinationDirectory);
+        }
+
+        setChallengeCode(deviceId, actionBuilder);
+        return actionBuilder;
+    }
+
+    private Refoler.Device getAgentDevice() {
+        Refoler.Device.Builder builder = Refoler.Device.newBuilder();
+        builder.setDeviceId(agentUUID);
+        builder.setDeviceType(Refoler.DeviceType.DEVICE_TYPE_AGENT);
+        return builder.build();
+    }
+
+    private static void setChallengeCode(String deviceId, FileAction.ActionRequest.Builder action) {
+        if(Objects.requireNonNullElse(action.getChallengeCode(), "").isBlank()) {
+            action.setChallengeCode(String.format(Locale.getDefault(),
+                    "%s_%s_%d", deviceId, action.getActionType().getDescriptorForType().getName(), System.currentTimeMillis()));
+        }
     }
 
     private FileSearch.Query buildQueryWrapper(QueryWrapper queryWrapper) {
