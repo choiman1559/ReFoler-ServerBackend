@@ -43,13 +43,15 @@ fun Application.configureSockets() {
                 }
 
                 for(frame in incoming) {
-                    Log.printDebug(LOG_TAG, String(frame.readBytes()))
+                    //Log.printDebug(LOG_TAG, "Incoming: " + String(frame.readBytes()))
                     val listener = WebSocketUtil.getSocketFrameIncomeListener(socketSession)
                     listener?.onIncoming(frame.readBytes())
                 }
 
-                Log.printDebug(LOG_TAG, "Disconnected: $socketSession")
-                WebSocketUtil.getSocketDisconnectListener(socketSession)?.onDisconnect()
+                CoroutineScope(Dispatchers.IO).launch {
+                    Log.printDebug(LOG_TAG, "Disconnected: $socketSession")
+                    WebSocketUtil.getSocketDisconnectListener(socketSession)?.onDisconnect()
+                }
             } else {
                 WebSocketUtil.closeWebSocket(this, CloseReason.Codes.PROTOCOL_ERROR, PacketConst.ERROR_ILLEGAL_ARGUMENT)
             }

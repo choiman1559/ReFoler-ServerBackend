@@ -5,6 +5,7 @@ import com.refoler.backend.commons.consts.EndPointConst;
 import com.refoler.backend.commons.packet.PacketWrapper;
 import com.refoler.backend.commons.service.GCollectTask;
 import com.refoler.backend.commons.service.Service;
+import com.refoler.backend.commons.utils.Log;
 import com.refoler.backend.commons.utils.MapObjLocker;
 import com.refoler.backend.commons.utils.WebSocketUtil;
 import io.ktor.server.websocket.DefaultWebSocketServerSession;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class PeerSocketProcess extends GCollectTask<String> {
 
+    private final static String LogTAG = "PeerSocketProcess";
     private static PeerSocketProcess instance;
     private final HashMap<String, MapObjLocker<PeerSession>> peerSocketMap = new HashMap<>();
     private final ConcurrentLinkedQueue<HeaderWaitingPeer> headerWaitSocket = new ConcurrentLinkedQueue<>();
@@ -65,6 +67,7 @@ public class PeerSocketProcess extends GCollectTask<String> {
         private final ConcurrentLinkedQueue<PeerInfo> peerInfos = new ConcurrentLinkedQueue<>();
 
         public void registerPeer(PeerInfo peerInfo) {
+            Log.printDebug(LogTAG, "Socket Registered: %s => Code: %s, Device: %s".formatted(peerInfo.connectSession.toString(), peerInfo.challengeCode, peerInfo.localDevice.getDeviceId()));
             for (PeerInfo otherPeer : peerInfos) {
                 if (otherPeer.isEncounter(peerInfo)) {
                     peerInfos.remove(otherPeer);
@@ -76,23 +79,33 @@ public class PeerSocketProcess extends GCollectTask<String> {
         }
 
         private void linkPeer(PeerInfo peerFoo, PeerInfo peerBar) {
+            Log.print(LogTAG, "Socket Peer (code %s) Connected: %s <--> %s".formatted(peerFoo.challengeCode, peerFoo.localDevice.getDeviceId(), peerBar.localDevice.getDeviceId()));
             WebSocketUtil.replyWebSocket(peerFoo.connectSession, PeerSocketProcess.callControlPacket(EndPointConst.FILE_PART_CONTROL_PEER_ACK));
             WebSocketUtil.replyWebSocket(peerBar.connectSession, PeerSocketProcess.callControlPacket(EndPointConst.FILE_PART_CONTROL_PEER_ACK));
+            registerOnDisconnect(peerBar, peerFoo);
+            registerOnDisconnect(peerFoo, peerBar);
+        }
 
-            WebSocketUtil.registerOnDisconnectSocket(peerFoo.connectSession, () -> {
-                if (WebSocketUtil.isSocketActive(peerBar.connectSession)) {
-                    WebSocketUtil.closeWebSocket(peerBar.connectSession, CloseReason.Codes.GOING_AWAY, PeerSocketProcess.callControlPacket(EndPointConst.FILE_PART_CONTROL_PEER_DISCONNECTED));
+        private void registerOnDisconnect(PeerInfo peerFoo, PeerInfo peerBar) {
+            WebSocketUtil.registerOnDataIncomeSocket(peerBar.connectSession, data -> {
+                if(WebSocketUtil.isSocketActive(peerFoo.connectSession)) {
+                    WebSocketUtil.replyWebSocket(peerFoo.connectSession, data);
                 }
             });
 
             WebSocketUtil.registerOnDisconnectSocket(peerBar.connectSession, () -> {
+                Log.printDebug(LogTAG, "Socket (code %s) Disconnected requested by: %s".formatted(peerBar.challengeCode, peerBar.localDevice.getDeviceId()));
+                WebSocketUtil.removeOnDataIncomeSocket(peerBar.connectSession);
+                WebSocketUtil.removeOnDisconnectSocket(peerBar.connectSession);
+
                 if (WebSocketUtil.isSocketActive(peerFoo.connectSession)) {
+                    Log.printDebug(LogTAG, "Trying to disconnect forcefully; Session: %s".formatted(peerFoo.connectSession));
                     WebSocketUtil.closeWebSocket(peerFoo.connectSession, CloseReason.Codes.GOING_AWAY, PeerSocketProcess.callControlPacket(EndPointConst.FILE_PART_CONTROL_PEER_DISCONNECTED));
                 }
-            });
 
-            WebSocketUtil.registerOnDataIncomeSocket(peerFoo.connectSession, data -> WebSocketUtil.replyWebSocket(peerBar.connectSession, data));
-            WebSocketUtil.registerOnDataIncomeSocket(peerBar.connectSession, data -> WebSocketUtil.replyWebSocket(peerFoo.connectSession, data));
+                peerBar.connectSession = null;
+                peerFoo.connectSession = null;
+            });
         }
 
         @Override
@@ -128,14 +141,16 @@ public class PeerSocketProcess extends GCollectTask<String> {
             headerWaitingPeer.connectSession = webSocketServerSession;
             headerWaitingPeer.encounterTime = System.currentTimeMillis();
 
+            WebSocketUtil.removeOnDataIncomeSocket(webSocketServerSession);
             WebSocketUtil.registerOnDataIncomeSocket(webSocketServerSession, data -> {
+                Log.printDebug(LogTAG, "Receiving raw handshake packet of: %s".formatted(webSocketServerSession.toString()));
                 String dataString = new String(data);
                 if (dataString.startsWith(EndPointConst.FILE_PART_CONTROL_PREFIX) &&
                         dataString.contains(EndPointConst.FILE_PART_CONTROL_HEADER_ACK)) {
                     try {
                         Refoler.RequestPacket requestPacket = PacketWrapper.parseRequestPacket(dataString.split(EndPointConst.FILE_PART_CONTROL_SEPARATOR)[1]);
-                        headerWaitingPeer.callOnHeaderEncountered(requestPacket);
                         WebSocketUtil.replyWebSocket(headerWaitingPeer.connectSession, PeerSocketProcess.callControlPacket(EndPointConst.FILE_PART_CONTROL_HEADER_OK));
+                        headerWaitingPeer.callOnHeaderEncountered(requestPacket);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -145,10 +160,10 @@ public class PeerSocketProcess extends GCollectTask<String> {
         }
 
         protected void callOnHeaderEncountered(Refoler.RequestPacket requestPacket) {
+            WebSocketUtil.removeOnDataIncomeSocket(connectSession);
             if (onHeaderEncountered != null) {
                 onHeaderEncountered.onEncounter(requestPacket.getUid(), PeerInfo.createFrom(requestPacket, connectSession));
             }
-            WebSocketUtil.removeOnDataIncomeSocket(connectSession);
         }
 
         public void setOnHeaderEncountered(OnHeaderEncountered onHeaderEncountered) {
@@ -157,6 +172,7 @@ public class PeerSocketProcess extends GCollectTask<String> {
     }
 
     public void handleEncounterSocket(DefaultWebSocketServerSession webSocketServerSession) {
+        Log.printDebug(LogTAG, "New Socket Encountered: %s".formatted(webSocketServerSession.toString()));
         HeaderWaitingPeer headerWaitingPeer = HeaderWaitingPeer.createNewQuery(webSocketServerSession);
         headerWaitingPeer.setOnHeaderEncountered((uid, peerInfo) -> {
             getPeerSessionByUserId(uid).registerPeer(peerInfo);
@@ -216,5 +232,10 @@ public class PeerSocketProcess extends GCollectTask<String> {
     @Override
     public @NonNull Set<String> requireKeySet() {
         return peerSocketMap.keySet();
+    }
+
+    @Override
+    public String requireLogTag() {
+        return LogTAG;
     }
 }

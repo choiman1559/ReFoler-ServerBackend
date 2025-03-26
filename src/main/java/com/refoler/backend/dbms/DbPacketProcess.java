@@ -13,6 +13,7 @@ import com.refoler.backend.commons.service.Service;
 import com.refoler.backend.dbms.search.SearchProcess;
 import io.ktor.server.application.ApplicationCall;
 import io.ktor.server.websocket.DefaultWebSocketServerSession;
+import io.ktor.websocket.CloseReason;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -53,7 +54,11 @@ public class DbPacketProcess implements PacketProcessModel {
             //TODO: Implement Blob transmitting
             String message = new String(data);
             Log.printDebug(LogTAG,  message);
-            WebSocketUtil.replyWebSocket(socketServerSession, "You said: %s".formatted(message));
+            if(message.toLowerCase().trim().equals("close")) {
+                WebSocketUtil.closeWebSocket(socketServerSession, CloseReason.Codes.NORMAL, "Closed by request");
+            } else {
+                WebSocketUtil.replyWebSocket(socketServerSession, "You said: %s".formatted(message));
+            }
         });
     }
 

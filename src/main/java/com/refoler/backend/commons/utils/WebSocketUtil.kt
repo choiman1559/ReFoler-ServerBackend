@@ -47,11 +47,16 @@ class WebSocketUtil {
         }
 
         @JvmStatic
-        fun removeOnDataIncomeSocket(
-            webSocketServerSession: DefaultWebSocketServerSession,
-        ) {
+        fun removeOnDataIncomeSocket(webSocketServerSession: DefaultWebSocketServerSession) {
             if (this.onSocketFrameIncomeListener.containsKey(webSocketServerSession)) {
                 this.onSocketFrameIncomeListener.remove(webSocketServerSession)
+            }
+        }
+
+        @JvmStatic
+        fun removeOnDisconnectSocket(webSocketServerSession: DefaultWebSocketServerSession) {
+            if (this.onSocketDisconnectListener.containsKey(webSocketServerSession)) {
+                this.onSocketDisconnectListener.remove(webSocketServerSession)
             }
         }
 
@@ -75,6 +80,7 @@ class WebSocketUtil {
         ) {
             runBlocking {
                 removeOnDataIncomeSocket(socketServerSession)
+                removeOnDisconnectSocket(socketServerSession)
                 socketServerSession.close(CloseReason(closeReason, message))
             }
         }

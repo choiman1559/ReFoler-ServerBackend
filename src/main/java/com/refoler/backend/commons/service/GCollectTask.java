@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class GCollectTask<KeyType> {
 
-    public final static String LogTag = "GCTask";
+    private final static String LogTag = "GCTask";
     public final long INTERVAL_GC_NOT_ENABLED = -1L;
     public final long INTERVAL_ONLY_NOT_ENABLED = -2L;
 

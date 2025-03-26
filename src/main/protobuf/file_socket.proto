@@ -8,14 +8,13 @@ enum ProcedureType {              //    PARAMETERS                              
   FUNC_GET_FILE_LENGTH = 3;       //    []                                        (int) file_length
   FUNC_SET_FILE_LENGTH = 4;       //    [new_file_length]                         (void)
   FUNC_CLOSE = 5;                 //    []                                        (void)
+  FUNC_SEEK = 6;                  //    [position]                                (void)
 }
 
 enum ControlProcedure {
   CTRL_ACK = 0;
-  CTRL_EOL = 1;
-  CTRL_ERROR = 2;
-  CTRL_DONE = 3;
-  CTRL_CLOSE = 8;
+  CTRL_ERROR = 1;
+  CTRL_CLOSE = 2;
 }
 
 message Procedure {
