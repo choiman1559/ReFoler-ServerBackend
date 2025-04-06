@@ -1,6 +1,6 @@
 package com.refoler.backend.commons
 
-import com.noti.server.module.configureMonitoring
+import com.refoler.backend.commons.modules.configureMonitoring
 import com.refoler.backend.commons.modules.configureStatus
 import com.refoler.backend.commons.modules.configureHTTP
 import com.refoler.backend.commons.modules.configureRouting

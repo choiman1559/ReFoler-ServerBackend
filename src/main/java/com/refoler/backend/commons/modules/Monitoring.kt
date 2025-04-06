@@ -1,4 +1,4 @@
-package com.noti.server.module
+package com.refoler.backend.commons.modules
 
 import io.ktor.server.application.*
 import io.ktor.server.plugins.calllogging.*

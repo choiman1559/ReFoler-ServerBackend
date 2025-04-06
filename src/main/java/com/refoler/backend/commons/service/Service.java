@@ -11,7 +11,7 @@ import io.ktor.server.application.ApplicationCall;
 import io.ktor.server.websocket.DefaultWebSocketServerSession;
 
 public class Service {
-    private static Service instance;
+    private volatile static Service instance;
     private final Argument argument;
     public final ServiceStatusHandler serviceStatusHandler;
     public PacketProcessModel packetProcessModel;
@@ -27,7 +27,7 @@ public class Service {
         this.serviceStatusHandler = new ServiceStatusHandler();
     }
 
-    public static void configureServiceInstance(Argument argument) throws ReflectiveOperationException {
+    public static synchronized void configureServiceInstance(Argument argument) throws ReflectiveOperationException {
         instance = new Service(argument);
         Class<?> packetProcessCls = switch (argument.operationMode) {
             case Argument.OPERATION_MODE_ENDPOINT -> EndPointPacketProcess.class;
@@ -38,8 +38,8 @@ public class Service {
         instance.packetProcessModel = (PacketProcessModel) packetProcessCls.getDeclaredConstructor().newInstance();
     }
 
-    public static Service getInstance() {
-        if(instance == null) {
+    public static synchronized Service getInstance() {
+        if (instance == null) {
             throw new NullPointerException("Service Instance is not initialized!");
         }
         return instance;
@@ -50,9 +50,9 @@ public class Service {
     }
 
     public static void invokeProcessPacket(ApplicationCall applicationCall, String serviceType, String rawData) throws Exception {
-        if(rawData == null || rawData.isEmpty()) {
+        if (rawData == null || rawData.isEmpty()) {
             Service.replyPacket(applicationCall, PacketWrapper.makeErrorPacket("HTTP Request body is null", HttpStatusCode.Companion.getNoContent()));
-        } else if(instance.packetProcessModel != null) {
+        } else if (instance.packetProcessModel != null) {
             instance.packetProcessModel.onPacketReceived(applicationCall, serviceType, rawData);
         }
     }
@@ -65,7 +65,7 @@ public class Service {
     }
 
     public static void invokeProcessWebSocketPacket(ApplicationCall applicationCall, String serviceType, DefaultWebSocketServerSession socketServerSession) throws Exception {
-        if(instance.packetProcessModel != null) {
+        if (instance.packetProcessModel != null) {
             instance.packetProcessModel.onWebSocketSessionConnected(applicationCall, serviceType, socketServerSession);
         }
     }
